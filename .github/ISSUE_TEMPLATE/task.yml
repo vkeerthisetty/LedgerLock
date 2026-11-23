@@ -1,0 +1,42 @@
+name: Project task
+description: Track an implementation, test, evidence, report, or demonstration task.
+title: "[Task] "
+labels: ["task"]
+body:
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Required outcome
+      description: State the concrete file, behaviour, test, or evidence that must exist.
+    validations:
+      required: true
+  - type: input
+    id: owner
+    attributes:
+      label: Primary owner
+    validations:
+      required: true
+  - type: input
+    id: reviewer
+    attributes:
+      label: Reviewer or supporting owner
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Acceptance criteria
+      description: List observable conditions required before this issue can be closed.
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: Verification and evidence
+      description: Provide the planned test ID, commands, and safe evidence filename.
+    validations:
+      required: true
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: Dependencies or blockers
