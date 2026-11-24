@@ -4,192 +4,168 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="LedgerLock tamper-evident audit-ledger dashboard">
-    <title>LedgerLock Dashboard</title>
+    <title>LedgerLock Integrity Workspace</title>
     <link rel="stylesheet" href="{{ url_for('static', path='/css/styles.css') }}">
     <script src="{{ url_for('static', path='/js/app.js') }}" defer></script>
   </head>
   <body>
     <a class="skip-link" href="#main-content">Skip to main content</a>
 
-    <header class="site-header">
-      <div class="brand-block">
-        <div class="brand-mark" aria-hidden="true">LL</div>
-        <div>
-          <p class="eyebrow">Tamper-evident audit ledger</p>
-          <h1>LedgerLock</h1>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Primary navigation">
+        <a class="sidebar-brand" href="#overview" aria-label="LedgerLock home">LL</a>
+        <nav class="sidebar-nav">
+          <a class="nav-item active" href="#overview" aria-current="page">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M4 13h6V4H4v9Zm0 7h6v-4H4v4Zm10 0h6v-9h-6v9Zm0-16v4h6V4h-6Z"/></svg>
+            <span>Overview</span>
+          </a>
+          <a class="nav-item" href="#new-event-heading">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+            <span>New event</span>
+          </a>
+          <a class="nav-item" href="#ledger-heading">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 4h14v16H5zM8 8h8M8 12h8M8 16h5"/></svg>
+            <span>Ledger</span>
+          </a>
+          <a class="nav-item" href="#verification-heading">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6M4 20h16"/></svg>
+            <span>Verify</span>
+          </a>
+          <a class="nav-item" href="#evidence-heading">
+            <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M7 3h10v4H7zM5 5H3v16h18V5h-2M8 12h8M8 16h5"/></svg>
+            <span>Evidence</span>
+          </a>
+        </nav>
+        <div class="sidebar-footer">
+          <span class="sidebar-status" aria-hidden="true"></span>
+          <span>Student build</span>
         </div>
-      </div>
-      <div class="header-actions">
-        <span id="mode-badge" class="mode-badge">{{ api_mode | upper }} MODE</span>
-        <button id="refresh-button" class="button button-secondary" type="button">Refresh</button>
-      </div>
-    </header>
+      </aside>
 
-    <div id="mock-warning" class="mode-warning" role="status" hidden>
-      <strong>Frontend preview only.</strong>
-      Mock mode uses disposable browser data and is not evidence of backend, Firestore, Cloud KMS, or Cloud Run integration.
+      <div class="main-column">
+        <header class="topbar">
+          <div>
+            <p class="breadcrumb">LedgerLock / Integrity workspace</p>
+            <h1>Audit integrity dashboard</h1>
+          </div>
+          <div class="topbar-actions">
+            <span id="mode-badge" class="mode-badge"><span class="mode-dot"></span>{{ api_mode | upper }} MODE</span>
+            <button id="refresh-button" class="icon-button" type="button" aria-label="Refresh ledger">
+              <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5M6.1 8A7 7 0 0 1 18 6l2 1M18 16a7 7 0 0 1-12 2l-2-1"/></svg>
+            </button>
+            <div class="avatar" aria-label="Team lead">K</div>
+          </div>
+        </header>
+
+        <div id="mock-warning" class="mode-warning" role="status" hidden>
+          <svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 8v5M12 17h.01M10.3 3.8 2.4 18a2 2 0 0 0 1.8 3h15.6a2 2 0 0 0 1.8-3L13.7 3.8a2 2 0 0 0-3.4 0Z"/></svg>
+          <div><strong>Frontend preview only</strong><span>Disposable browser data only. Backend, Firestore, Cloud KMS, and Cloud Run are not verified here.</span></div>
+        </div>
+
+        <main id="main-content" class="workspace">
+          <section id="overview" class="summary-grid" aria-labelledby="overview-heading">
+            <article class="summary-card status-summary">
+              <div class="card-kicker"><span class="live-dot"></span>Current integrity</div>
+              <div class="status-summary-body">
+                <div>
+                  <h2 id="overview-heading">Ledger health</h2>
+                  <p id="status-copy">Run verification to establish the current chain state.</p>
+                  <button id="verify-button" class="text-action" type="button">Run integrity check <span aria-hidden="true">→</span></button>
+                </div>
+                <div class="integrity-ring" aria-hidden="true"><span id="ring-value">&mdash;</span><small>Status</small></div>
+              </div>
+            </article>
+
+            <article class="summary-card activity-summary">
+              <div class="card-heading-inline">
+                <div><span class="card-kicker">Ledger activity</span><h2>Recent events</h2></div>
+                <span class="trend-badge">Live</span>
+              </div>
+              <div class="activity-chart" aria-hidden="true">
+                <span style="--bar:28%"></span><span style="--bar:42%"></span><span style="--bar:35%"></span><span style="--bar:58%"></span><span style="--bar:49%"></span><span style="--bar:72%"></span><span style="--bar:64%"></span><span style="--bar:88%"></span><span style="--bar:78%"></span><span style="--bar:94%"></span><span style="--bar:83%"></span><span style="--bar:70%"></span>
+              </div>
+              <div class="chart-axis"><span>Start</span><span>Latest</span></div>
+            </article>
+
+            <article class="summary-card metric-summary">
+              <div class="metric-icon blue"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 4h12v16H6zM9 8h6M9 12h6M9 16h3"/></svg></div>
+              <span>Audit records</span>
+              <strong id="record-count">0</strong>
+              <small>Latest sequence <b id="latest-sequence">&mdash;</b></small>
+            </article>
+
+            <article class="summary-card metric-summary">
+              <div class="metric-icon violet"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M12 3 4 7v5c0 4.6 3.2 7.6 8 9 4.8-1.4 8-4.4 8-9V7l-8-4Zm-3 9 2 2 4-4"/></svg></div>
+              <span>Checkpoint</span>
+              <strong id="checkpoint-status" class="checkpoint-value">Not available</strong>
+              <small>Trusted signature state</small>
+            </article>
+          </section>
+
+          <div class="content-layout">
+            <div class="content-primary">
+              <section class="panel event-panel" aria-labelledby="new-event-heading">
+                <div class="panel-header">
+                  <div><span class="section-label">Synthetic data only</span><h2 id="new-event-heading">Create audit event</h2></div>
+                  <span class="panel-step">01</span>
+                </div>
+                <form id="event-form" novalidate>
+                  <div class="form-grid">
+                    <label>Event type<select id="event-type" name="event_type" required><option value="">Select event type</option><option value="access">Access</option><option value="configuration">Configuration</option><option value="verification">Verification</option><option value="authentication">Authentication</option></select></label>
+                    <label>Outcome<select id="outcome" name="outcome" required><option value="">Select outcome</option><option value="success">Success</option><option value="denied">Denied</option><option value="controlled_error">Controlled error</option></select></label>
+                    <label>Synthetic actor ID<input id="actor-id" name="actor_id" type="text" maxlength="64" placeholder="actor-demo-01" required></label>
+                    <label>Synthetic resource ID<input id="resource-id" name="resource_id" type="text" maxlength="64" placeholder="resource-demo-01" required></label>
+                    <label class="field-wide">Action<input id="action" name="action" type="text" maxlength="120" placeholder="Viewed synthetic record" required></label>
+                  </div>
+                  <p id="form-error" class="form-message form-error" role="alert" hidden></p>
+                  <div class="form-footer"><span>Server assigns sequence, timestamp, and hashes</span><div><button id="reset-form-button" class="button button-muted" type="reset">Clear</button><button class="button button-primary" type="submit">Create event</button></div></div>
+                </form>
+              </section>
+
+              <section class="panel ledger-panel" aria-labelledby="ledger-heading">
+                <div class="panel-header ledger-header">
+                  <div><span class="section-label">Ordered records</span><h2 id="ledger-heading">Audit ledger</h2></div>
+                  <div class="ledger-tools"><label class="search-field"><svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m16 16 4 4"/></svg><input id="ledger-search" type="search" placeholder="Search records" aria-label="Search ledger records"></label><span id="ledger-message" class="record-total" aria-live="polite"></span></div>
+                </div>
+                <div class="table-wrap">
+                  <table><thead><tr><th scope="col">Sequence</th><th scope="col">Timestamp</th><th scope="col">Event</th><th scope="col">Actor</th><th scope="col">Outcome</th><th scope="col">Previous hash</th><th scope="col">Current hash</th></tr></thead><tbody id="ledger-body"></tbody></table>
+                </div>
+                <div id="ledger-empty" class="empty-state"><div class="empty-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M6 4h12v16H6zM9 8h6M9 12h6M9 16h3"/></svg></div><strong>No audit events yet</strong><span>Create a synthetic event to begin the ledger.</span></div>
+              </section>
+            </div>
+
+            <aside class="right-rail" aria-label="Verification and evidence">
+              <section class="rail-card verify-card" aria-labelledby="verification-heading">
+                <div class="rail-card-top"><span class="section-label">Latest verification</span><span id="chain-status" class="status-pill status-neutral">Not checked</span></div>
+                <div class="verify-illustration"><svg aria-hidden="true" viewBox="0 0 64 64"><path d="M32 6 12 15v13c0 14 8 24 20 30 12-6 20-16 20-30V15L32 6Z"/><path d="m23 31 6 6 13-14"/></svg></div>
+                <h2 id="verification-heading">Integrity result</h2>
+                <div id="verification-empty" class="verification-empty">No verification has been run for this ledger.</div>
+                <div id="verification-result" class="verification-result" hidden>
+                  <div id="verification-icon" class="result-icon" aria-hidden="true"></div>
+                  <h3 id="verification-title"></h3><p id="verification-message"></p>
+                  <dl class="result-details"><div><dt>Records</dt><dd id="checked-records">0</dd></div><div><dt>Failed at</dt><dd id="failed-sequence">&mdash;</dd></div><div><dt>Checked</dt><dd id="checked-at">&mdash;</dd></div></dl>
+                </div>
+                <button class="button button-primary button-full" type="button" data-verify-proxy>Verify complete chain</button>
+              </section>
+
+              <section id="demo-controls" class="rail-card demo-card" hidden>
+                <div class="demo-icon"><svg aria-hidden="true" viewBox="0 0 24 24"><path d="M5 4h14v16H5zM8 8h8M8 12h5M16 15l3 3M19 15l-3 3"/></svg></div>
+                <h2>Controlled demo</h2><p>Change a disposable record, then verify again to demonstrate detection.</p>
+                <div class="stacked-actions"><button id="tamper-button" class="button button-danger" type="button">Change demo record</button><button id="reset-data-button" class="button button-muted" type="button">Reset demo data</button></div>
+              </section>
+
+              <section class="rail-card evidence-card" aria-labelledby="evidence-heading">
+                <div class="rail-card-top"><span class="section-label">Release readiness</span><span>0 / 8</span></div>
+                <h2 id="evidence-heading">Evidence tracker</h2>
+                <div class="evidence-list"><div><b>T01&ndash;T03</b><span>Chain and tampering</span><i></i></div><div><b>T04&ndash;T05</b><span>Keys and claims</span><i></i></div><div><b>T06&ndash;T07</b><span>Errors and secrets</span><i></i></div><div><b>T08</b><span>Full regression</span><i></i></div></div>
+              </section>
+            </aside>
+          </div>
+        </main>
+
+        <footer class="site-footer"><span>LedgerLock student project</span><span>Use synthetic data only</span></footer>
+      </div>
     </div>
-
-    <main id="main-content" class="page-shell">
-      <section class="hero" aria-labelledby="overview-heading">
-        <div>
-          <p class="eyebrow">Integrity overview</p>
-          <h2 id="overview-heading">Audit trail status</h2>
-          <p class="hero-copy">Create synthetic events, review the linked ledger, and run an explicit integrity check.</p>
-        </div>
-        <button id="verify-button" class="button button-primary" type="button">Verify integrity</button>
-      </section>
-
-      <section class="metrics" aria-label="Ledger metrics">
-        <article class="metric-card">
-          <span class="metric-label">Chain status</span>
-          <strong id="chain-status" class="status-pill status-neutral">Not checked</strong>
-        </article>
-        <article class="metric-card">
-          <span class="metric-label">Audit records</span>
-          <strong id="record-count" class="metric-value">0</strong>
-        </article>
-        <article class="metric-card">
-          <span class="metric-label">Latest sequence</span>
-          <strong id="latest-sequence" class="metric-value">—</strong>
-        </article>
-        <article class="metric-card">
-          <span class="metric-label">Checkpoint</span>
-          <strong id="checkpoint-status" class="status-pill status-neutral">Not available</strong>
-        </article>
-      </section>
-
-      <section class="workspace-grid">
-        <article class="panel" aria-labelledby="new-event-heading">
-          <div class="panel-heading">
-            <div>
-              <p class="eyebrow">Synthetic data only</p>
-              <h2 id="new-event-heading">Add audit event</h2>
-            </div>
-          </div>
-
-          <form id="event-form" novalidate>
-            <div class="form-grid">
-              <label>
-                Event type
-                <select id="event-type" name="event_type" required>
-                  <option value="">Select an event</option>
-                  <option value="access">Access</option>
-                  <option value="configuration">Configuration</option>
-                  <option value="verification">Verification</option>
-                  <option value="authentication">Authentication</option>
-                </select>
-              </label>
-              <label>
-                Outcome
-                <select id="outcome" name="outcome" required>
-                  <option value="">Select an outcome</option>
-                  <option value="success">Success</option>
-                  <option value="denied">Denied</option>
-                  <option value="controlled_error">Controlled error</option>
-                </select>
-              </label>
-              <label>
-                Synthetic actor ID
-                <input id="actor-id" name="actor_id" type="text" maxlength="64" placeholder="actor-demo-01" required>
-              </label>
-              <label>
-                Synthetic resource ID
-                <input id="resource-id" name="resource_id" type="text" maxlength="64" placeholder="resource-demo-01" required>
-              </label>
-              <label class="field-full">
-                Action
-                <input id="action" name="action" type="text" maxlength="120" placeholder="viewed synthetic record" required>
-              </label>
-            </div>
-            <p id="form-error" class="form-message form-error" role="alert" hidden></p>
-            <div class="form-actions">
-              <button class="button button-primary" type="submit">Create event</button>
-              <button id="reset-form-button" class="button button-ghost" type="reset">Clear</button>
-            </div>
-          </form>
-        </article>
-
-        <article class="panel" aria-labelledby="verification-heading">
-          <div class="panel-heading">
-            <div>
-              <p class="eyebrow">Latest verification</p>
-              <h2 id="verification-heading">Integrity result</h2>
-            </div>
-          </div>
-          <div id="verification-empty" class="empty-state">
-            Run verification to check sequence order and hash links.
-          </div>
-          <div id="verification-result" class="verification-result" hidden>
-            <div id="verification-icon" class="result-icon" aria-hidden="true"></div>
-            <div>
-              <h3 id="verification-title"></h3>
-              <p id="verification-message"></p>
-              <dl class="result-details">
-                <div><dt>Checked records</dt><dd id="checked-records">0</dd></div>
-                <div><dt>Failed sequence</dt><dd id="failed-sequence">—</dd></div>
-                <div><dt>Checked at</dt><dd id="checked-at">—</dd></div>
-              </dl>
-            </div>
-          </div>
-          <div id="demo-controls" class="demo-controls" hidden>
-            <h3>Controlled demo mode</h3>
-            <p>These actions affect disposable browser data only.</p>
-            <div class="button-row">
-              <button id="tamper-button" class="button button-danger" type="button">Change demo record</button>
-              <button id="reset-data-button" class="button button-secondary" type="button">Reset demo data</button>
-            </div>
-          </div>
-        </article>
-      </section>
-
-      <section class="panel ledger-panel" aria-labelledby="ledger-heading">
-        <div class="panel-heading panel-heading-row">
-          <div>
-            <p class="eyebrow">Ordered records</p>
-            <h2 id="ledger-heading">Audit ledger</h2>
-          </div>
-          <span id="ledger-message" class="subtle-text" aria-live="polite"></span>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th scope="col">Sequence</th>
-                <th scope="col">Timestamp</th>
-                <th scope="col">Event</th>
-                <th scope="col">Actor</th>
-                <th scope="col">Outcome</th>
-                <th scope="col">Previous hash</th>
-                <th scope="col">Current hash</th>
-              </tr>
-            </thead>
-            <tbody id="ledger-body"></tbody>
-          </table>
-        </div>
-        <div id="ledger-empty" class="empty-state">No synthetic audit events have been created.</div>
-      </section>
-
-      <section class="panel" aria-labelledby="evidence-heading">
-        <div class="panel-heading">
-          <div>
-            <p class="eyebrow">Release readiness</p>
-            <h2 id="evidence-heading">Required evidence</h2>
-          </div>
-        </div>
-        <div class="evidence-grid">
-          <article><strong>T01–T03</strong><span>Chain creation and tamper detection</span></article>
-          <article><strong>T04–T05</strong><span>Key handling and claim review</span></article>
-          <article><strong>T06–T07</strong><span>Safe errors and secret inspection</span></article>
-          <article><strong>T08</strong><span>Full reproducible regression</span></article>
-        </div>
-      </section>
-    </main>
-
-    <footer class="site-footer">
-      <span>LedgerLock student project</span>
-      <span>Use synthetic data only</span>
-    </footer>
 
     <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
   </body>

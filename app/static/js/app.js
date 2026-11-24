@@ -10,10 +10,13 @@ const elements = {
   ledgerBody: document.querySelector("#ledger-body"),
   ledgerEmpty: document.querySelector("#ledger-empty"),
   ledgerMessage: document.querySelector("#ledger-message"),
+  ledgerSearch: document.querySelector("#ledger-search"),
   recordCount: document.querySelector("#record-count"),
   latestSequence: document.querySelector("#latest-sequence"),
   chainStatus: document.querySelector("#chain-status"),
   checkpointStatus: document.querySelector("#checkpoint-status"),
+  ringValue: document.querySelector("#ring-value"),
+  statusCopy: document.querySelector("#status-copy"),
   verificationEmpty: document.querySelector("#verification-empty"),
   verificationResult: document.querySelector("#verification-result"),
   verificationTitle: document.querySelector("#verification-title"),
@@ -116,8 +119,7 @@ function setBusy(button, busy, label) {
   button.textContent = busy ? label : button.dataset.defaultLabel;
 }
 
-function renderLedger(records) {
-  state.records = records;
+function renderLedgerRows(records) {
   elements.ledgerBody.innerHTML = records.map((record) => `
     <tr>
       <td><strong>${escapeText(record.sequence)}</strong></td>
@@ -129,6 +131,11 @@ function renderLedger(records) {
       <td><code title="${escapeText(record.current_hash)}">${escapeText(shortHash(record.current_hash))}</code></td>
     </tr>`).join("");
   elements.ledgerEmpty.hidden = records.length > 0;
+}
+
+function renderLedger(records) {
+  state.records = records;
+  renderLedgerRows(records);
   elements.recordCount.textContent = String(records.length);
   elements.latestSequence.textContent = records.length ? String(records.at(-1).sequence) : "—";
   elements.ledgerMessage.textContent = records.length ? `${records.length} synthetic record${records.length === 1 ? "" : "s"}` : "";
@@ -146,6 +153,10 @@ function renderVerification(result) {
   elements.checkedAt.textContent = new Date().toLocaleTimeString();
   elements.chainStatus.textContent = result.valid ? "Valid" : "Tamper detected";
   elements.chainStatus.className = `status-pill ${result.valid ? "status-valid" : "status-invalid"}`;
+  elements.ringValue.textContent = result.valid ? "OK" : "!";
+  elements.statusCopy.textContent = result.valid
+    ? "Every record matches its stored sequence and hash links."
+    : `The chain failed at sequence ${result.failed_sequence ?? "unknown"}.`;
   elements.checkpointStatus.textContent = apiMode === "mock" ? "Not tested" : (result.checkpoint_valid ? "Verified" : "Unavailable");
   elements.checkpointStatus.className = `status-pill ${result.checkpoint_valid ? "status-valid" : "status-neutral"}`;
 }
@@ -183,12 +194,31 @@ elements.form.addEventListener("submit", async (event) => {
   }
 });
 
-document.querySelector("#verify-button").addEventListener("click", async (event) => {
+async function runVerification(button) {
   try {
-    setBusy(event.currentTarget, true, "Verifying…");
+    setBusy(button, true, "Verifying…");
     renderVerification(await api.verify());
   } catch (error) { showToast(error.message); }
-  finally { setBusy(event.currentTarget, false, "Verifying…"); }
+  finally { setBusy(button, false, "Verifying…"); }
+}
+
+document.querySelectorAll("#verify-button, [data-verify-proxy]").forEach((button) => {
+  button.addEventListener("click", () => runVerification(button));
+});
+
+elements.ledgerSearch.addEventListener("input", (event) => {
+  const query = event.currentTarget.value.trim().toLocaleLowerCase();
+  if (!query) {
+    renderLedgerRows(state.records);
+    elements.ledgerMessage.textContent = state.records.length
+      ? `${state.records.length} synthetic record${state.records.length === 1 ? "" : "s"}`
+      : "";
+    return;
+  }
+  const filtered = state.records.filter((record) => Object.values(record).some((value) =>
+    String(value).toLocaleLowerCase().includes(query)));
+  renderLedgerRows(filtered);
+  elements.ledgerMessage.textContent = `${filtered.length} of ${state.records.length} records`;
 });
 
 document.querySelector("#refresh-button").addEventListener("click", () => refreshLedger().catch((error) => showToast(error.message)));
@@ -207,6 +237,9 @@ if (apiMode === "mock") {
     elements.verificationResult.hidden = true;
     elements.chainStatus.textContent = "Not checked";
     elements.chainStatus.className = "status-pill status-neutral";
+    elements.ringValue.textContent = "—";
+    elements.statusCopy.textContent = "Run a verification after creating synthetic events.";
+    elements.ledgerSearch.value = "";
     showToast("Disposable demo data reset.");
   });
 }
