@@ -1,0 +1,39 @@
+
+LEDGERLOCK – T03 VERIFICATION EVIDENCE
+
+Test ID: T03
+Test Name: Removed or Reordered Event Detection
+
+Objective:
+Verify that removing or reordering an audit event is detected by the ledger verification process.
+
+Test Environment:
+Operating System:
+Python Version:
+Project Revision / Git Commit:
+
+Initial Ledger:
+Number of records:
+Initial verification result:
+
+Tampering Operation:
+[Describe the exact record removed or reordered.]
+
+Verification After Tampering:
+Command or API request:
+Actual output:
+
+Expected Result:
+The verifier should identify the integrity failure caused by the missing or reordered event, within the defined verification and checkpoint scope.
+
+Actual Result:
+[Fill in after running the test.]
+
+Test Status:
+[PASS / FAIL / NOT RUN]
+
+Evidence Notes:
+[Record relevant output and limitations. Do not include secrets or real personal data.]
+
+Tested By:
+Date:
