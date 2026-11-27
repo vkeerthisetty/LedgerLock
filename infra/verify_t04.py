@@ -1,12 +1,27 @@
-import json, sys
+import importlib.util
+import json
+import sys
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+
 from storage.firestore_adapter import LedgerStorageAdapter
 from signing.kms_adapter import CheckpointSignerAdapter
-from logging.cloud_logger import SecurityLoggerAdapter
 
-FORBIDDEN = ["BEGIN PRIVATE KEY", "BEGIN RSA PRIVATE KEY", "private_key", "_ephemeral_secret", "client_secret"]
+spec = importlib.util.spec_from_file_location("cloud_logger", ROOT / "logging/cloud_logger.py")
+cloud_logger_mod = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(cloud_logger_mod)
+SecurityLoggerAdapter = cloud_logger_mod.SecurityLoggerAdapter
+
+FORBIDDEN = [
+    "BEGIN PRIVATE KEY",
+    "BEGIN RSA PRIVATE KEY",
+    "private_key",
+    "_ephemeral_hmac_key",
+    "client_secret",
+]
+
 
 def run_t04_check() -> str:
     temp = Path("data/t04_test_records.json")
@@ -29,13 +44,15 @@ def run_t04_check() -> str:
         "current_hash": "a1b2c3d4e5f6" * 5 + "abcd",
     }
     ckpt = signer.sign_checkpoint(rec["current_hash"])
+    verified, verify_msg = signer.verify_checkpoint(rec["current_hash"], ckpt["signature"])
+    rec["checkpoint_algorithm"] = ckpt["algorithm"]
     rec["checkpoint_key_id"] = ckpt["key_id"]
     rec["checkpoint_signature"] = ckpt["signature"]
 
     storage.save_record(rec)
     records = storage.read_chain()
     leaks = [m for m in FORBIDDEN if m.lower() in json.dumps(records).lower()]
-    passed = len(leaks) == 0
+    passed = (len(leaks) == 0) and verified
 
     logger.log_event({
         "event_type": "T04_PRIVATE_KEY_INSPECTION",
@@ -48,15 +65,17 @@ def run_t04_check() -> str:
         "Test ID: T04",
         "Phase: After-Fix",
         "Environment: Windows Local Workstation (Python 3 / Local Simulation Adapter)",
-        "Date: 2026-11-27",
+        "Date: 2026-11-28",
         f"T04 Private Key Inspection Result: {'PASS' if passed else 'FAIL'}",
+        f"Signature Verification Status: {verify_msg}",
         f"Records Inspected: {len(records)} | Forbidden Markers Found: {len(leaks)}",
-        f"Stored Key Reference (Public Only): {records[0]['checkpoint_key_id']}",
+        f"Stored Key Reference (Public/Non-Secret Only): {records[0]['checkpoint_key_id']}",
     ]
     output = "\n".join(report_lines)
     print(output)
     temp.unlink(missing_ok=True)
     return output
+
 
 if __name__ == "__main__":
     run_t04_check()
