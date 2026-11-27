@@ -93,17 +93,15 @@ class AuditLedger:
         previous_hash = GENESIS_HASH
 
         for index, record in enumerate(records):
-            expected_sequence = index + 1
             sequence = record.get("sequence")
 
-            if sequence != expected_sequence:
+            if sequence != index + 1:
                 return {
                     "valid": False,
                     "checked_records": index + 1,
                     "failed_sequence": sequence,
                     "message": (
-                        f"Integrity verification failed at "
-                        f"sequence {sequence}."
+                        f"Integrity verification failed at sequence {sequence}."
                     ),
                 }
 
@@ -113,8 +111,7 @@ class AuditLedger:
                     "checked_records": index + 1,
                     "failed_sequence": sequence,
                     "message": (
-                        f"Integrity verification failed at "
-                        f"sequence {sequence}."
+                        f"Integrity verification failed at sequence {sequence}."
                     ),
                 }
 
@@ -124,8 +121,7 @@ class AuditLedger:
                     "checked_records": index + 1,
                     "failed_sequence": sequence,
                     "message": (
-                        f"Integrity verification failed at "
-                        f"sequence {sequence}."
+                        f"Integrity verification failed at sequence {sequence}."
                     ),
                 }
 
