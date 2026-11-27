@@ -1,11 +1,10 @@
-
-# LedgerLock – Security Findings Register
+# LedgerLock - Security Findings Register
 
 ## 1. Purpose
 
 This register records security findings identified during LedgerLock development, testing and review.
 
-Each finding should include its description, severity, evidence, impact, recommended remediation and current status.
+Each finding includes its description, severity, evidence, impact, recommended remediation and current status.
 
 ## 2. Severity Definitions
 
@@ -19,7 +18,7 @@ Each finding should include its description, severity, evidence, impact, recomme
 
 ## 3. Findings
 
-### F-001 – Mock Mode Must Not Be Mistaken for Live Verification
+### F-001 - Mock Mode Must Not Be Mistaken for Live Verification
 
 - Category: Security communication
 - Severity: Informational
@@ -31,19 +30,19 @@ Each finding should include its description, severity, evidence, impact, recomme
 - Owner: Frontend / Project Coordinator
 - Retest required: Yes
 
-### F-002 – Backend Input Validation
+### F-002 - Backend Input Validation
 
 - Category: Input validation
 - Severity: To be assessed
-- Status: Pending implementation review
-- Description: All browser-submitted event data must be validated by the backend.
-- Impact: Malformed or unauthorized input may create invalid or misleading records.
-- Recommendation: Enforce server-side validation, field restrictions and authorization.
-- Evidence: Backend source review and invalid-input tests.
+- Status: Implementation present; further authorization review required
+- Description: Browser-submitted event data must be validated by the backend. The current API uses Pydantic validation, restricted event types, field length constraints and rejects extra fields.
+- Impact: Malformed or unauthorized input may create invalid or misleading records if validation or authorization controls are insufficient.
+- Recommendation: Continue testing server-side validation and implement authentication and authorization before production deployment.
+- Evidence: `tests/test_api.py`, including invalid-input and extra-field rejection tests.
 - Owner: Backend Engineer
 - Retest required: Yes
 
-### F-003 – Checkpoint Signing Key Protection
+### F-003 - Checkpoint Signing Key Protection
 
 - Category: Key management
 - Severity: To be assessed
@@ -51,11 +50,11 @@ Each finding should include its description, severity, evidence, impact, recomme
 - Description: The private signing key used for checkpoint signatures must not be exposed to unauthorized users or frontend code.
 - Impact: Unauthorized checkpoint signatures could undermine trust in verification.
 - Recommendation: Use protected key-management services and least-privilege permissions.
-- Evidence: Cloud configuration review and key exposure tests.
+- Evidence: Cloud configuration review and key exposure tests are still required.
 - Owner: Cloud Security Engineer
 - Retest required: Yes
 
-### F-004 – Audit Chain Integrity Verification
+### F-004 - Audit Chain Integrity Verification
 
 - Category: Data integrity
 - Severity: To be assessed
@@ -63,20 +62,27 @@ Each finding should include its description, severity, evidence, impact, recomme
 - Description: The system must detect unauthorized record modification, deletion and reordering within the protected verification scope.
 - Impact: Undetected changes may undermine audit reliability.
 - Recommendation: Verify record hashes, sequence numbers, previous-hash relationships and trusted checkpoints.
-- Evidence: T01, T02 and T03 test results.
+- Evidence: Existing T03 verification evidence at `evidence/T03/verification-output.txt`. Additional checkpoint and tampering tests remain necessary.
 - Owner: Backend Engineer / Security Architect
 - Retest required: Yes
 
-### F-005 – Sensitive Information in Logs and Errors
+### F-005 - Sensitive Information in Logs and Errors
 
 - Category: Information disclosure
 - Severity: To be assessed
-- Status: Pending review
+- Status: Partially verified; further review required
 - Description: API responses and security logs must not expose private keys, credentials, tokens, internal paths or stack traces.
 - Impact: Information disclosure may help attackers compromise the system.
-- Recommendation: Use safe error responses and redact sensitive log fields.
-- Evidence: T06 and T07 test results.
-- Owner: Application Security Engineer
+- Recommendation:
+  - Maintain controlled HTTP, validation and unexpected-error responses.
+  - Retain the security-log field allowlist and sanitisation checks.
+  - Review logging coverage across API operations.
+  - Protect production log access through appropriate authorization and cloud IAM.
+- Evidence:
+  - T06: `evidence/T06/test-output.txt` - 5 tests passed.
+  - T07: `evidence/T07/test-output.txt` - 4 tests passed.
+  - Implementation: `app/main.py`, `app/security_logging.py`.
+- Owner: Identity and Data Security Engineer
 - Retest required: Yes
 
 ## 4. Findings Status Definitions
@@ -92,12 +98,14 @@ Each finding should include its description, severity, evidence, impact, recomme
 
 This register contains design risks and items requiring validation. Entries marked as pending or to be assessed are not confirmed vulnerabilities.
 
-Update this document when actual testing produces new evidence.
+T06 and T07 have passed their current targeted local test suites. These results do not establish production security, cloud IAM enforcement, production secret management or complete logging coverage.
+
+Update this document when additional testing produces new evidence.
 
 ## 6. Final Review
 
-Reviewed by:
-Review date:
-Project revision:
-Outstanding findings:
-Release recommendation:
+Reviewed by: Identity and Data Security Engineer
+Review date: 27 November 2026
+Base project revision: 79ed7be
+Outstanding findings: F-002, F-003, F-004 and F-005 require further review or verification.
+Release recommendation: Do not treat the current mock implementation as production-ready.

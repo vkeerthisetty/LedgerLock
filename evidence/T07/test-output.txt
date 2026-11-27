@@ -1,0 +1,9 @@
+test_approved_fields_are_preserved (tests.test_security_logging.SecurityLoggingTests.test_approved_fields_are_preserved) ... ok
+test_free_form_sensitive_values_are_rejected (tests.test_security_logging.SecurityLoggingTests.test_free_form_sensitive_values_are_rejected) ... ok
+test_non_string_values_are_rejected (tests.test_security_logging.SecurityLoggingTests.test_non_string_values_are_rejected) ... ok
+test_unapproved_fields_are_removed (tests.test_security_logging.SecurityLoggingTests.test_unapproved_fields_are_removed) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.000s
+
+OK
