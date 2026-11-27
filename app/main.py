@@ -18,9 +18,7 @@ from app.ledger_core import AuditLedger
 
 BASE_DIR = Path(__file__).resolve().parent
 
-API_MODE = os.getenv(
-    "LEDGERLOCK_API_MODE", "mock"
-).strip().lower()
+API_MODE = os.getenv("LEDGERLOCK_API_MODE", "mock").strip().lower()
 
 if API_MODE not in {"mock", "live"}:
     raise RuntimeError(
@@ -34,14 +32,11 @@ app = FastAPI(
     version="0.1.0",
 )
 
-# One shared ledger for the entire application.
 app.state.ledger = AuditLedger()
 app.state.checkpoint = None
 
-# Register backend API routes.
 app.include_router(router)
 
-# Frontend configuration.
 app.mount(
     "/static",
     StaticFiles(directory=BASE_DIR / "static"),
@@ -56,15 +51,11 @@ async def safe_validation_error(
     request: Request,
     exc: RequestValidationError,
 ) -> JSONResponse:
-    """Return validation errors without exposing submitted values."""
-
     del request
 
     errors = [
         {
-            "field": ".".join(
-                str(part) for part in error["loc"][1:]
-            ),
+            "field": ".".join(str(part) for part in error["loc"][1:]),
             "type": error["type"],
         }
         for error in exc.errors()
@@ -81,8 +72,6 @@ async def safe_validation_error(
 
 @app.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request) -> HTMLResponse:
-    """Render the LedgerLock dashboard."""
-
     return templates.TemplateResponse(
         request=request,
         name="index.html",
@@ -92,8 +81,6 @@ async def dashboard(request: Request) -> HTMLResponse:
 
 @app.get("/api/health")
 async def health() -> dict[str, str]:
-    """Return a safe health response."""
-
     return {
         "status": "ok",
         "service": "ledgerlock-frontend",

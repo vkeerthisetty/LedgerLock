@@ -17,6 +17,7 @@ GENESIS_HASH = "0" * 64
 
 def canonical_json(data: dict[str, Any]) -> bytes:
     """Return deterministic UTF-8 JSON bytes."""
+
     return json.dumps(
         data,
         sort_keys=True,
@@ -26,7 +27,8 @@ def canonical_json(data: dict[str, Any]) -> bytes:
 
 
 def calculate_hash(record: dict[str, Any]) -> str:
-    """Calculate SHA-256 without including the record's own hash."""
+    """Calculate SHA-256 without including the record's own current hash."""
+
     hash_data = dict(record)
     hash_data.pop("current_hash", None)
 
@@ -42,6 +44,7 @@ class AuditLedger:
 
     def add_event(self, event: dict[str, str]) -> dict[str, Any]:
         """Create a record with server-generated metadata."""
+
         with self._lock:
             previous_hash = (
                 self._records[-1]["current_hash"]
@@ -71,14 +74,22 @@ class AuditLedger:
 
     def get_records(self) -> list[dict[str, Any]]:
         """Return copies of records in ascending sequence order."""
+
         with self._lock:
             return [dict(record) for record in self._records]
+
+    def clear(self) -> None:
+        """Clear the disposable in-memory ledger for isolated tests."""
+
+        with self._lock:
+            self._records.clear()
 
     @staticmethod
     def verify_records(
         records: list[dict[str, Any]],
     ) -> dict[str, Any]:
         """Check sequence numbers, previous hashes and record hashes."""
+
         previous_hash = GENESIS_HASH
 
         for index, record in enumerate(records):
@@ -89,7 +100,9 @@ class AuditLedger:
                     "valid": False,
                     "checked_records": index + 1,
                     "failed_sequence": sequence,
-                    "message": f"Integrity verification failed at sequence {sequence}.",
+                    "message": (
+                        f"Integrity verification failed at sequence {sequence}."
+                    ),
                 }
 
             if record.get("previous_hash") != previous_hash:
@@ -97,7 +110,9 @@ class AuditLedger:
                     "valid": False,
                     "checked_records": index + 1,
                     "failed_sequence": sequence,
-                    "message": f"Integrity verification failed at sequence {sequence}.",
+                    "message": (
+                        f"Integrity verification failed at sequence {sequence}."
+                    ),
                 }
 
             if record.get("current_hash") != calculate_hash(record):
@@ -105,7 +120,9 @@ class AuditLedger:
                     "valid": False,
                     "checked_records": index + 1,
                     "failed_sequence": sequence,
-                    "message": f"Integrity verification failed at sequence {sequence}.",
+                    "message": (
+                        f"Integrity verification failed at sequence {sequence}."
+                    ),
                 }
 
             previous_hash = record["current_hash"]
