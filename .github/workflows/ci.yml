@@ -1,3 +1,4 @@
+
 name: CI
 
 on:
@@ -11,10 +12,10 @@ permissions:
 jobs:
   foundation-checks:
     runs-on: ubuntu-latest
+
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
-
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -24,11 +25,10 @@ jobs:
       - name: Install project dependencies
         run: |
           python -m pip install --upgrade pip
-          python -m pip install -r requirements.txt
+          python -m pip install -r requirements-dev.txt
 
       - name: Compile Python sources
         run: python -m compileall app tests
-
 
       - name: Run repository contract tests
         run: python -m unittest discover -s tests -v
