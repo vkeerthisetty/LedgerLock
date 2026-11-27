@@ -2,42 +2,47 @@
 """LedgerLock backend API."""
 
 import os
-from typing import Optional
+from typing import Literal
 
-from fastapi import APIRouter, Header, HTTPException
+from fastapi import APIRouter, Header, HTTPException, Request
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.ledger_core import AuditLedger
 from app.checkpoint import create_checkpoint, verify_checkpoint
 
 router = APIRouter()
-ledger = AuditLedger()
-
-checkpoint: Optional[dict] = None
 
 CHECKPOINT_SECRET = os.getenv("LEDGERLOCK_CHECKPOINT_SECRET", "")
 ADMIN_TOKEN = os.getenv("LEDGERLOCK_ADMIN_TOKEN", "")
 
 
 class EventInput(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(
+        str_strip_whitespace=True,
+        extra="forbid",
+    )
 
-    event_type: str = Field(min_length=1, max_length=50)
-    actor_id: str = Field(min_length=1, max_length=100)
-    action: str = Field(min_length=1, max_length=200)
-    resource_id: str = Field(min_length=1, max_length=100)
-    outcome: str = Field(min_length=1, max_length=50)
+    event_type: Literal[
+        "access",
+        "configuration",
+        "verification",
+        "authentication",
+    ]
+    actor_id: str = Field(min_length=1, max_length=64)
+    action: str = Field(min_length=1, max_length=120)
+    resource_id: str = Field(min_length=1, max_length=64)
+    outcome: Literal["success", "denied", "controlled_error"]
 
 
 @router.post("/api/events", status_code=201)
-def add_event(event: EventInput):
-    """Add an event to the audit ledger."""
-    return ledger.add_event(event.model_dump())
+def add_event(event: EventInput, request: Request):
+    return request.app.state.ledger.add_event(event.model_dump())
 
 
 @router.get("/api/ledger")
-def get_ledger():
-    """Return records in sequence order."""
+def get_ledger(request: Request):
+    ledger = request.app.state.ledger
+    checkpoint = request.app.state.checkpoint
     records = ledger.get_records()
 
     return {
@@ -52,11 +57,12 @@ def get_ledger():
 
 
 @router.post("/api/verify")
-def verify_ledger():
-    """Verify the hash chain and, when available, its checkpoint."""
+def verify_ledger(request: Request):
+    ledger = request.app.state.ledger
+    checkpoint = request.app.state.checkpoint
     records = ledger.get_records()
-    result = AuditLedger.verify_records(records)
 
+    result = AuditLedger.verify_records(records)
     checkpoint_valid = False
 
     if checkpoint and CHECKPOINT_SECRET:
@@ -80,10 +86,10 @@ def verify_ledger():
 
 
 @router.post("/api/checkpoints")
-def make_checkpoint(x_admin_token: str = Header(default="")):
-    """Create a trusted checkpoint; requires administrator configuration."""
-    global checkpoint
-
+def make_checkpoint(
+    request: Request,
+    x_admin_token: str = Header(default=""),
+):
     if not ADMIN_TOKEN or x_admin_token != ADMIN_TOKEN:
         raise HTTPException(status_code=403, detail="Not authorised.")
 
@@ -91,6 +97,14 @@ def make_checkpoint(x_admin_token: str = Header(default="")):
         raise HTTPException(
             status_code=503,
             detail="Checkpoint signing is not configured.",
+        )
+
+    ledger = request.app.state.ledger
+
+    if not AuditLedger.verify_records(ledger.get_records())["valid"]:
+        raise HTTPException(
+            status_code=409,
+            detail="Cannot checkpoint an invalid ledger.",
         )
 
     try:
@@ -103,6 +117,8 @@ def make_checkpoint(x_admin_token: str = Header(default="")):
             status_code=409,
             detail="Cannot checkpoint an invalid ledger.",
         )
+
+    request.app.state.checkpoint = checkpoint
 
     return {
         "status": "created",
