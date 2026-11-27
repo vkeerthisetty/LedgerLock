@@ -12,6 +12,7 @@ permissions:
 jobs:
   foundation-checks:
     runs-on: ubuntu-latest
+
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -21,8 +22,10 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install dependencies
-        run: python -m pip install -r requirements-dev.txt
+      - name: Install project dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
 
       - name: Compile Python sources
         run: python -m compileall app tests
@@ -34,7 +37,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          forbidden="$(git ls-files | grep -E '(^|/)\.env($|/)|(^|/)service-account.*\.json$|(^|/)application_default_credentials\.json$|(^|/).*\.(pem|key|p12|pfx)$' | grep -vE '(^|/)\.env\.example$' || true)"
+          forbidden="$(git ls-files | grep -E '(^|/)(\.env($|\.)|.*service-account.*\.json$|application_default_credentials\.json$|.*\.(pem|key|p12|pfx)$)' || true)"
           if [ -n "$forbidden" ]; then
             echo "Forbidden credential or key-like files are tracked:"
             echo "$forbidden"
