@@ -26,6 +26,9 @@ app = FastAPI(
     description="Tamper-evident audit-ledger demonstration frontend",
     version="0.1.0",
 )
+
+app.include_router(router)
+
 app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
 templates = Jinja2Templates(directory=BASE_DIR / "templates")
 
