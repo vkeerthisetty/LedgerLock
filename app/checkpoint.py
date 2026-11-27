@@ -44,7 +44,7 @@ def create_checkpoint(
     if records:
         latest = records[-1]
         sequence = latest.get("sequence")
-        record_hash = latest.get("hash")
+        record_hash = latest.get("current_hash")
 
         if not isinstance(sequence, int) or not isinstance(record_hash, str):
             raise ValueError("Latest ledger record is invalid.")
@@ -97,7 +97,7 @@ def verify_checkpoint(
         if records:
             latest = records[-1]
             actual_sequence = latest.get("sequence")
-            actual_hash = latest.get("hash")
+            actual_hash = latest.get("current_hash")
         else:
             actual_sequence = None
             actual_hash = None
