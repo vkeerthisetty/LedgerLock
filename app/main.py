@@ -1,24 +1,35 @@
 
-"""FastAPI entry point for the LedgerLock frontend foundation."""
+"""FastAPI entry point for the LedgerLock integration baseline."""
 
 from __future__ import annotations
 
 import os
 from pathlib import Path
+from typing import Literal
 
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from pydantic import BaseModel, Field
 from starlette.exceptions import HTTPException as StarletteHTTPException
+
+from app.ledger_core import AuditLedger
+from app.security_logging import log_security_event
 
 
 BASE_DIR = Path(__file__).resolve().parent
-API_MODE = os.getenv("LEDGERLOCK_API_MODE", "mock").strip().lower()
+
+API_MODE = os.getenv(
+    "LEDGERLOCK_API_MODE", "mock"
+).strip().lower()
 
 if API_MODE not in {"mock", "live"}:
-    raise RuntimeError("LEDGERLOCK_API_MODE must be either 'mock' or 'live'.")
+    raise RuntimeError(
+        "LEDGERLOCK_API_MODE must be either 'mock' or 'live'."
+    )
+
 
 app = FastAPI(
     title="LedgerLock",
@@ -26,13 +37,62 @@ app = FastAPI(
     version="0.1.0",
 )
 
+app.mount(
+    "/static",
+    StaticFiles(directory=BASE_DIR / "static"),
+    name="static",
+)
+
+templates = Jinja2Templates(directory=BASE_DIR / "templates")
+
+
+# --------------------------------------------------
+# Event validation
+# --------------------------------------------------
+
+class EventCreate(BaseModel):
+    """Validated synthetic event supplied by the client."""
+
+    model_config = {
+        "str_strip_whitespace": True,
+        "extra": "forbid",
+    }
+
+    event_type: Literal[
+        "access",
+        "configuration",
+        "verification",
+        "authentication",
+    ]
+
+    actor_id: str = Field(min_length=1, max_length=64)
+    action: str = Field(min_length=1, max_length=120)
+    resource_id: str = Field(min_length=1, max_length=64)
+
+    outcome: Literal[
+        "success",
+        "denied",
+        "controlled_error",
+    ]
+
+
+# --------------------------------------------------
+# Ledger initialization
+# --------------------------------------------------
+
+app.state.ledger = AuditLedger()
+
+
+# --------------------------------------------------
+# Safe HTTP error handling
+# --------------------------------------------------
 
 @app.exception_handler(StarletteHTTPException)
 async def safe_http_exception_handler(
     request: Request,
     exc: StarletteHTTPException,
 ) -> JSONResponse:
-    """Return controlled HTTP errors without exposing internal details."""
+    """Return controlled HTTP errors without internal details."""
 
     messages = {
         401: "Authentication is required.",
@@ -56,6 +116,10 @@ async def safe_http_exception_handler(
     )
 
 
+# --------------------------------------------------
+# Safe validation error handling
+# --------------------------------------------------
+
 @app.exception_handler(RequestValidationError)
 async def safe_validation_exception_handler(
     request: Request,
@@ -63,47 +127,75 @@ async def safe_validation_exception_handler(
 ) -> JSONResponse:
     """Return safe validation information without submitted values."""
 
+    errors = [
+        {
+            "field": ".".join(
+                str(part) for part in error["loc"][1:]
+            ),
+            "type": error["type"],
+        }
+        for error in exc.errors()
+    ]
+
     fields = list(
         dict.fromkeys(
-            str(error["loc"][-1])
-            for error in exc.errors()
-            if error.get("loc") and isinstance(error["loc"][-1], str)
+            error["field"] for error in errors
         )
     )
+
+    message = "Request validation failed."
 
     return JSONResponse(
         status_code=422,
         content={
+            # Top-level fields for the API contract.
+            "message": message,
+            "errors": errors,
+
+            # Nested fields for the security error contract.
             "error": {
                 "code": "validation_error",
-                "message": "Request validation failed.",
+                "message": message,
                 "fields": fields,
-            }
+            },
         },
     )
 
+
+# --------------------------------------------------
+# Safe unexpected error handling
+# --------------------------------------------------
 
 @app.exception_handler(Exception)
 async def safe_unexpected_exception_handler(
     request: Request,
     exc: Exception,
 ) -> JSONResponse:
-    """Hide unexpected internal errors from API clients."""
+    """Hide internal exception details from API clients."""
+
+    log_security_event(
+        event_type="application_error",
+        outcome="failure",
+        error_category="unexpected_error",
+    )
 
     return JSONResponse(
         status_code=500,
         content={
             "error": {
                 "code": "internal_error",
-                "message": "An unexpected error occurred. Please try again later.",
+                "message": (
+                    "An unexpected error occurred. "
+                    "Please try again later."
+                ),
             }
         },
     )
 
 
-app.mount("/static", StaticFiles(directory=BASE_DIR / "static"), name="static")
-templates = Jinja2Templates(directory=BASE_DIR / "templates")
-
+# --------------------------------------------------
+# Dashboard
+# --------------------------------------------------
 
 @app.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request) -> HTMLResponse:
@@ -116,12 +208,77 @@ async def dashboard(request: Request) -> HTMLResponse:
     )
 
 
+# --------------------------------------------------
+# Health
+# --------------------------------------------------
+
 @app.get("/api/health")
 async def health() -> dict[str, str]:
     """Return a non-sensitive health response."""
 
     return {
         "status": "ok",
-        "service": "ledgerlock-frontend",
-        "api_mode": API_MODE,
+        "service": "ledgerlock-api",
+        "environment": "development",
     }
+
+
+# --------------------------------------------------
+# Create event
+# --------------------------------------------------
+
+@app.post("/api/events", status_code=201)
+async def create_event(
+    event: EventCreate,
+) -> dict[str, object]:
+    """Append a validated synthetic event to the ledger."""
+
+    return app.state.ledger.add_event(
+        event.model_dump()
+    )
+
+
+# --------------------------------------------------
+# Read ledger
+# --------------------------------------------------
+
+@app.get("/api/ledger")
+async def list_ledger() -> dict[str, object]:
+    """Return the current ledger and checkpoint status."""
+
+    records = app.state.ledger.get_records()
+
+    return {
+        "records": records,
+        "count": len(records),
+        "latest_sequence": (
+            records[-1]["sequence"] if records else None
+        ),
+        "checkpoint": {
+            "status": "unavailable",
+            "key_version": None,
+        },
+    }
+
+
+# --------------------------------------------------
+# Verify ledger
+# --------------------------------------------------
+
+@app.post("/api/verify")
+async def verify_ledger() -> dict[str, object]:
+    """Verify sequence and hash links."""
+
+    result = app.state.ledger.verify_records(
+        app.state.ledger.get_records()
+    )
+
+    result["checkpoint_valid"] = False
+
+    if result["valid"]:
+        result["message"] = (
+            "Hash chain verified. "
+            "Signed checkpoint verification is unavailable."
+        )
+
+    return result

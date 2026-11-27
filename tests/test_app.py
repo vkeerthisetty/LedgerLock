@@ -26,6 +26,9 @@ class AppTests(unittest.TestCase):
             raise_server_exceptions=False,
         )
 
+    def setUp(self) -> None:
+        app.state.ledger.clear()
+
     def test_health_is_safe_and_explicit(self) -> None:
         response = self.client.get("/api/health")
 
@@ -33,8 +36,8 @@ class AppTests(unittest.TestCase):
         self.assertEqual(
             {
                 "status": "ok",
-                "service": "ledgerlock-frontend",
-                "api_mode": "mock",
+                "service": "ledgerlock-api",
+                "environment": "development",
             },
             response.json(),
         )

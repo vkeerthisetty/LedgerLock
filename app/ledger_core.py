@@ -27,10 +27,10 @@ def canonical_json(data: dict[str, Any]) -> bytes:
 
 
 def calculate_hash(record: dict[str, Any]) -> str:
-    """Calculate SHA-256 without including the record's own hash."""
+    """Calculate SHA-256 without including the record's own current hash."""
 
     hash_data = dict(record)
-    hash_data.pop("hash", None)
+    hash_data.pop("current_hash", None)
 
     return hashlib.sha256(canonical_json(hash_data)).hexdigest()
 
@@ -47,7 +47,7 @@ class AuditLedger:
 
         with self._lock:
             previous_hash = (
-                self._records[-1]["hash"]
+                self._records[-1]["current_hash"]
                 if self._records
                 else GENESIS_HASH
             )
@@ -67,7 +67,7 @@ class AuditLedger:
                 "previous_hash": previous_hash,
             }
 
-            record["hash"] = calculate_hash(record)
+            record["current_hash"] = calculate_hash(record)
             self._records.append(record)
 
             return dict(record)
@@ -77,6 +77,12 @@ class AuditLedger:
 
         with self._lock:
             return [dict(record) for record in self._records]
+
+    def clear(self) -> None:
+        """Clear the disposable in-memory ledger for isolated tests."""
+
+        with self._lock:
+            self._records.clear()
 
     @staticmethod
     def verify_records(
@@ -112,7 +118,7 @@ class AuditLedger:
                     ),
                 }
 
-            if record.get("hash") != calculate_hash(record):
+            if record.get("current_hash") != calculate_hash(record):
                 return {
                     "valid": False,
                     "checked_records": index + 1,
@@ -123,7 +129,7 @@ class AuditLedger:
                     ),
                 }
 
-            previous_hash = record["hash"]
+            previous_hash = record["current_hash"]
 
         return {
             "valid": True,
