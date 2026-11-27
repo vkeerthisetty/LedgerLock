@@ -1,3 +1,4 @@
+
 from __future__ import annotations
 
 import os
@@ -8,15 +9,14 @@ from fastapi.testclient import TestClient
 os.environ.setdefault("LEDGERLOCK_API_MODE", "mock")
 
 from app.main import app  # noqa: E402
+from app.ledger_core import AuditLedger  # noqa: E402
 
 
 class AppTests(unittest.TestCase):
-    @classmethod
-    def setUpClass(cls) -> None:
-        cls.client = TestClient(app)
-
     def setUp(self) -> None:
-        app.state.ledger.clear()
+        app.state.ledger = AuditLedger()
+        app.state.checkpoint = None
+        self.client = TestClient(app)
 
     def test_health_is_safe_and_explicit(self) -> None:
         response = self.client.get("/api/health")
@@ -24,8 +24,8 @@ class AppTests(unittest.TestCase):
         self.assertEqual(
             {
                 "status": "ok",
-                "service": "ledgerlock-api",
-                "environment": "development",
+                "service": "ledgerlock-frontend",
+                "api_mode": "mock",
             },
             response.json(),
         )
