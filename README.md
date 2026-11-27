@@ -37,11 +37,12 @@ Implemented locally:
 - Validated synthetic event creation through `POST /api/events`.
 - Ordered in-memory records through `GET /api/ledger`.
 - SHA-256 sequence and previous-hash verification through `POST /api/verify`.
+- An explicitly labelled local HMAC-SHA256 checkpoint through protected `POST /api/checkpoints` when `LEDGERLOCK_CHECKPOINT_SECRET` and `LEDGERLOCK_ADMIN_TOKEN` are supplied in the process environment.
 
 Still pending and intentionally reported as unavailable:
 
 - Persistent Firestore storage.
-- Signed checkpoints and Cloud KMS verification.
+- Cloud KMS checkpoint signing and verification. The local HMAC checkpoint is not cloud-integration evidence.
 - Cloud Run, IAM and Cloud Logging evidence.
 
 ## Tests

@@ -4,6 +4,7 @@ import unittest
 
 from fastapi.testclient import TestClient
 
+from app import api as api_module
 from app.main import app
 
 
@@ -23,6 +24,7 @@ class LedgerApiTests(unittest.TestCase):
 
     def setUp(self) -> None:
         app.state.ledger.clear()
+        app.state.checkpoint = None
 
     def test_create_list_and_verify_chain(self) -> None:
         created = self.client.post("/api/events", json=VALID_EVENT)
@@ -53,6 +55,41 @@ class LedgerApiTests(unittest.TestCase):
         response = self.client.post("/api/events", json=payload)
         self.assertEqual(422, response.status_code)
         self.assertNotIn("do-not-echo", response.text)
+
+    def test_checkpoint_requires_admin_token(self) -> None:
+        response = self.client.post("/api/checkpoints")
+
+        self.assertEqual(403, response.status_code)
+        self.assertNotIn("Not authorised", response.text)
+
+    def test_create_and_verify_local_checkpoint(self) -> None:
+        old_token = api_module.ADMIN_TOKEN
+        old_secret = api_module.CHECKPOINT_SECRET
+        api_module.ADMIN_TOKEN = "synthetic-admin-token"
+        api_module.CHECKPOINT_SECRET = "x" * 32
+
+        try:
+            created = self.client.post("/api/events", json=VALID_EVENT)
+            self.assertEqual(201, created.status_code)
+
+            checkpoint = self.client.post(
+                "/api/checkpoints",
+                headers={"x-admin-token": "synthetic-admin-token"},
+            )
+            self.assertEqual(200, checkpoint.status_code)
+            self.assertEqual("created", checkpoint.json()["status"])
+
+            verified = self.client.post("/api/verify")
+            self.assertEqual(200, verified.status_code)
+            self.assertTrue(verified.json()["valid"])
+            self.assertTrue(verified.json()["checkpoint_valid"])
+            self.assertEqual(
+                "Chain and checkpoint verified.",
+                verified.json()["message"],
+            )
+        finally:
+            api_module.ADMIN_TOKEN = old_token
+            api_module.CHECKPOINT_SECRET = old_secret
 
 
 if __name__ == "__main__":
