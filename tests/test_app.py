@@ -15,14 +15,17 @@ class AppTests(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.client = TestClient(app)
 
+    def setUp(self) -> None:
+        app.state.ledger.clear()
+
     def test_health_is_safe_and_explicit(self) -> None:
         response = self.client.get("/api/health")
         self.assertEqual(200, response.status_code)
         self.assertEqual(
             {
                 "status": "ok",
-                "service": "ledgerlock-frontend",
-                "api_mode": "mock",
+                "service": "ledgerlock-api",
+                "environment": "development",
             },
             response.json(),
         )

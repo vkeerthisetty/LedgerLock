@@ -18,6 +18,7 @@ class RepositoryFoundationTests(unittest.TestCase):
             ".gitignore",
             ".github/pull_request_template.md",
             ".github/workflows/ci.yml",
+            "app/ledger_core.py",
             "app/main.py",
             "app/templates/index.html",
             "app/static/css/styles.css",
@@ -25,6 +26,10 @@ class RepositoryFoundationTests(unittest.TestCase):
             "docs/api-contract.md",
             "docs/frontend-acceptance.md",
             "docs/integration-checklist.md",
+            "docs/threat-model.md",
+            "docs/data-flow.md",
+            "docs/findings-register.md",
+            "docs/release-criteria.md",
         }
         missing = sorted(path for path in required if not (ROOT / path).is_file())
         self.assertEqual([], missing, f"Missing required files: {missing}")
@@ -53,6 +58,10 @@ class RepositoryFoundationTests(unittest.TestCase):
         readme = self.read("README.md").lower()
         self.assertIn("frontend preview only", html)
         self.assertIn("not cryptographic or cloud-integration evidence", readme)
+
+    def test_hidden_regions_cannot_be_forced_visible_by_component_css(self) -> None:
+        css = self.read("app/static/css/styles.css").replace(" ", "")
+        self.assertIn("[hidden]{display:none!important}", css)
 
     def test_gitignore_blocks_common_secret_files(self) -> None:
         gitignore = self.read(".gitignore")

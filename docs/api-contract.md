@@ -56,7 +56,7 @@ The browser may display hashes but must never receive private key material, cred
 
 ## POST /api/verify
 
-Runs complete-chain and checkpoint verification.
+Runs complete available hash-chain verification. The current integration baseline does not implement signed checkpoints, so it returns `checkpoint_valid: false` and states that limitation in the message. A later signing integration may return `true` only after verifying a real checkpoint signature.
 
 Valid response:
 
@@ -65,8 +65,8 @@ Valid response:
   "valid": true,
   "checked_records": 3,
   "failed_sequence": null,
-  "checkpoint_valid": true,
-  "message": "Chain and checkpoint verified."
+  "checkpoint_valid": false,
+  "message": "Hash chain verified. Signed checkpoint verification is unavailable."
 }
 ```
 
@@ -86,7 +86,7 @@ The response identifies the failing sequence without exposing unnecessary record
 
 ## POST /api/checkpoints
 
-Creates or refreshes a trusted signed checkpoint. This endpoint must be protected and must not be directly exposed to an ordinary demonstration user.
+Planned, not currently implemented. When added, it will create or refresh a trusted signed checkpoint. This endpoint must be protected and must not be directly exposed to an ordinary demonstration user.
 
 ## POST /api/demo/tamper
 
