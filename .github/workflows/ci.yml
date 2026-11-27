@@ -37,7 +37,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          forbidden="$(git ls-files | grep -E '(^|/)(\.env($|\.)|.*service-account.*\.json$|application_default_credentials\.json$|.*\.(pem|key|p12|pfx)$)' || true)"
+
+          forbidden="$(git ls-files | grep -E '(^|/)(\.env($|\.)|.*service-account.*\.json$|application_default_credentials\.json$|.*\.(pem|key|p12|pfx)$)' | grep -Ev '(^|/)\.env\.example$' || true)"
+
           if [ -n "$forbidden" ]; then
             echo "Forbidden credential or key-like files are tracked:"
             echo "$forbidden"
