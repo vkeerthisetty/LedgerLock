@@ -5,11 +5,12 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import re
 from datetime import datetime, timezone
 from typing import Any
 
-from logging.cloud_logger import SecurityLoggerAdapter
+from app.cloud_logging import SecurityLoggerAdapter
 
 
 logger = logging.getLogger("ledgerlock.security")
@@ -76,14 +77,12 @@ def log_security_event(**fields: Any) -> None:
     try:
         cloud_logger = SecurityLoggerAdapter(
             use_cloud=(
-                __import__("os").getenv(
-                    "USE_CLOUD_SERVICES", "false"
-                ).lower() == "true"
+                os.getenv("USE_CLOUD_SERVICES", "false").lower()
+                == "true"
             )
         )
         cloud_logger.log_event(safe_data)
     except Exception:
-        # Never expose logging-service failures or sensitive data.
         logger.warning(
             json.dumps(
                 {
