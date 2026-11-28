@@ -11,6 +11,7 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from signing.kms_adapter import CheckpointSignerAdapter
 
 from app.api import router
 from app.local_storage import LocalLedgerStorage
@@ -47,6 +48,9 @@ else:
     app.state.ledger = app.state.storage.ledger
 
 app.state.checkpoint = app.state.storage.get_checkpoint()
+app.state.signer = CheckpointSignerAdapter(
+    use_cloud=USE_CLOUD_SERVICES
+)
 app.include_router(router)
 
 app.mount(
