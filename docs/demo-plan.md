@@ -2,7 +2,7 @@
 
 ## Purpose
 
-This runbook provides a reproducible 7-10 minute demonstration using synthetic data. It presents verified local and Render behavior and labels all unverified cloud operations accurately.
+This runbook provides a reproducible 7-10 minute demonstration using synthetic data. It presents verified local, Render and Floci behavior and labels all remaining limitations accurately.
 
 ## Preparation
 
@@ -76,21 +76,33 @@ python -m unittest tests.test_ledger_core.AuditLedgerTests.test_t03_missing_even
 - Show the sanitized unexpected-error event.
 - Run `python scripts/check_repository_safety.py`.
 
-### 7:00-8:00 - Regression and deployment
+### 7:00-8:15 - Floci-GCP verification
+
+Run or show the saved output from:
+
+```powershell
+.\scripts\run_floci_integration.ps1
+```
+
+- Show that Firestore, KMS and Logging report `running`.
+- Explain the synthetic Firestore write/read, EC P-256 sign/verify and sanitized log write/read.
+- State clearly that this is free local Floci-GCP, not a real GCP account and not yet connected to the public website.
+
+### 8:15-9:00 - Regression and deployment
 
 - Show `evidence/test-matrix.md`.
 - Report the current local totals: 33 `unittest` tests and 37 `pytest` tests.
 - Show the successful GitHub Actions check for the reviewed revision.
 - Show the production health endpoint without exposing environment secrets.
 
-### 8:00-9:00 - Claim boundary
+### 9:00-9:30 - Claim boundary
 
 - Explain that hash chaining provides tamper evidence, not immutability.
 - Explain why process memory is not durable.
 - Explain why local HMAC is not Cloud KMS evidence.
-- Identify Firestore, KMS, Cloud Logging, Cloud Run and Floci as unverified.
+- Identify Firestore, KMS and Logging as verified in Floci only; Cloud Run runtime, IAM and active FastAPI cloud wiring remain unverified.
 
-### 9:00-10:00 - Release decision and next steps
+### 9:30-10:00 - Release decision and next steps
 
 - State: controlled demonstration approved with conditions.
 - State: complete cloud release not approved.
@@ -104,7 +116,7 @@ Hashes expose inconsistent history, but an actor controlling every record and an
 
 **Where is the private key?**
 
-The verified local checkpoint uses a shared HMAC secret supplied through the process environment. No private key is committed. Cloud KMS asymmetric behavior is not yet verified.
+The active local checkpoint uses a shared HMAC secret supplied through the process environment. No private key is committed. The separate Floci KMS adapter holds its EC private key inside the emulator and only exposes sign and public-key operations.
 
 **Does the Render deployment retain records?**
 
@@ -112,7 +124,7 @@ No. The active ledger is process memory and can reset on restart or redeployment
 
 **Is Firestore or Cloud KMS working?**
 
-The repository contains adapters and local simulations. Live service operations remain pending and must not be claimed as complete.
+Yes, their adapters passed a real protocol round trip against local Floci-GCP. They are not yet connected to the active website and were not tested in a paid or real Google Cloud project.
 
 **Does LedgerLock prove the original event was true?**
 

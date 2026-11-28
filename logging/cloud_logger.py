@@ -44,8 +44,31 @@ class SecurityLoggerAdapter:
         clean["timestamp"] = datetime.now(timezone.utc).isoformat()
         clean["mode"] = self.mode
         if self.use_cloud:
-            from google.cloud import logging as cloud_logging
-            cloud_logging.Client().logger(os.getenv("CLOUD_LOG_NAME", "ledgerlock-audit-events")).log_struct(clean)
+            endpoint = os.getenv("FLOCI_GCP_ENDPOINT", "").strip()
+            project_id = os.getenv("GCP_PROJECT_ID") or os.getenv("GOOGLE_CLOUD_PROJECT")
+            if not project_id:
+                raise RuntimeError("GCP_PROJECT_ID is required when cloud services are enabled.")
+
+            if endpoint:
+                import httpx
+
+                log_name = os.getenv("CLOUD_LOG_NAME", "ledgerlock-audit-events")
+                response = httpx.post(
+                    f"{endpoint.rstrip('/')}/v2/entries:write",
+                    json={
+                        "logName": f"projects/{project_id}/logs/{log_name}",
+                        "resource": {"type": "global"},
+                        "entries": [{"jsonPayload": clean}],
+                    },
+                    timeout=10.0,
+                )
+                response.raise_for_status()
+            else:
+                from google.cloud import logging as cloud_logging
+
+                cloud_logging.Client(project=project_id).logger(
+                    os.getenv("CLOUD_LOG_NAME", "ledgerlock-audit-events")
+                ).log_struct(clean)
         else:
             with self.local_log_path.open("a", encoding="utf-8") as f:
                 f.write(json.dumps(clean) + "\n")

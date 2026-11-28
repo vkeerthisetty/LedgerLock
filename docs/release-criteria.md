@@ -19,17 +19,18 @@
 - [x] Local checkpoint creation requires administrator authorization.
 - [x] Local checkpoint verification is tested.
 - [x] Signing secrets are absent from frontend and repository content.
-- [ ] Cloud KMS asymmetric signing and public-key verification are observed.
+- [x] Cloud KMS-compatible asymmetric signing and public-key verification are observed in Floci.
 
 ## Cloud and infrastructure requirements
 
 - [x] Cloud/local adapters default safely to local simulation.
 - [x] Render deployment is live and health-checked.
 - [x] Cloud claims are labelled verified, simulated or untested.
-- [ ] Floci workspace and service availability are verified.
+- [x] Floci-GCP and required Firestore, KMS and Logging service availability are verified.
 - [ ] Firestore persistence and concurrency behavior are verified.
 - [ ] Least-privilege runtime identity is verified.
-- [ ] Cloud Logging delivery, redaction and access are verified.
+- [x] Floci Cloud Logging delivery and redaction are verified.
+- [ ] Logging access control and retention are verified.
 - [ ] Cloud Run is verified if required by the assigned environment.
 
 ## Security requirements
@@ -77,7 +78,7 @@
 
 **Controlled local/Render demonstration: approved with conditions.**
 
-Conditions: use synthetic data, state that active records are disposable, label HMAC as local, and do not claim Firestore, Cloud KMS, Cloud Run, Cloud Logging or Floci verification.
+Conditions: use synthetic data, state that the active website still uses disposable process memory, label HMAC as local, and describe Firestore, KMS and Logging only as **verified in local Floci-GCP**, not as active website or real GCP services.
 
 **Complete cloud release: not approved.**
 
@@ -85,4 +86,4 @@ Reviewer: Keerthi, Project Coordinator
 
 Review date: 28 November 2026
 
-Tested source baseline: `9b195ed`
+Tested source baseline: Floci integration revision based on parent `a0e9cdc`

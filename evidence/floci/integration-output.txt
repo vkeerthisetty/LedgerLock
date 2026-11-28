@@ -1,0 +1,32 @@
+LedgerLock Floci-GCP Integration Evidence
+Date: 28 November 2026
+Environment: Windows, Docker Desktop, Floci-GCP 0.13.0
+Project: floci-local (local emulator only; no Google Cloud account or billing)
+Data: synthetic test records only
+
+Command:
+  .\scripts\run_floci_integration.ps1
+
+Observed service health:
+  firestore = running
+  kms       = running
+  logging   = running
+
+Bootstrap result:
+  key ring already exists: projects/floci-local/locations/us-central1/keyRings/ledgerlock-keyring
+  signing key already exists: projects/floci-local/locations/us-central1/keyRings/ledgerlock-keyring/cryptoKeys/checkpoint-signer
+
+Test:
+  tests/test_floci_integration.py::test_floci_firestore_kms_and_logging_round_trip PASSED
+  1 passed
+
+Verified operations:
+  - Firestore: unique synthetic document written and read back in sequence order.
+  - Cloud KMS: EC_SIGN_P256_SHA256 signature created and verified with the public key.
+  - Cloud Logging: allowlisted structured entry written and read back; unapproved field absent.
+  - No private key, personal credential, service-account file or billing account was used.
+
+Limitations:
+  - This is local Floci-GCP evidence, not a real Google Cloud deployment.
+  - The active FastAPI application still uses its in-memory ledger and local checkpoint.
+  - Cloud Run runtime and IAM enforcement were not tested in this execution.

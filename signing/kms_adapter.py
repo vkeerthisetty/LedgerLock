@@ -20,11 +20,29 @@ class CheckpointSignerAdapter:
             os.getenv("KMS_KEY_VERSION", "1"),
         )
 
+    @staticmethod
+    def _kms_client():
+        from google.cloud import kms
+
+        endpoint = os.getenv("FLOCI_GCP_ENDPOINT", "").strip()
+        if not endpoint:
+            return kms.KeyManagementServiceClient()
+
+        import grpc
+        from google.cloud.kms_v1.services.key_management_service.transports.grpc import (
+            KeyManagementServiceGrpcTransport,
+        )
+
+        target = endpoint.removeprefix("http://").removeprefix("https://").rstrip("/")
+        transport = KeyManagementServiceGrpcTransport(
+            channel=grpc.insecure_channel(target)
+        )
+        return kms.KeyManagementServiceClient(transport=transport)
+
     def sign_checkpoint(self, payload: str) -> dict:
         payload_bytes = payload.encode("utf-8")
         if self.use_cloud:
-            from google.cloud import kms
-            client = kms.KeyManagementServiceClient()
+            client = self._kms_client()
             key_name = self._get_kms_key_version_name(client)
             digest = hashlib.sha256(payload_bytes).digest()
             resp = client.asymmetric_sign(request={"name": key_name, "digest": {"sha256": digest}})
@@ -49,11 +67,10 @@ class CheckpointSignerAdapter:
 
         payload_bytes = payload.encode("utf-8")
         if self.use_cloud:
-            from google.cloud import kms
             from cryptography.hazmat.primitives import hashes, serialization
             from cryptography.hazmat.primitives.asymmetric import ec, padding, utils
 
-            client = kms.KeyManagementServiceClient()
+            client = self._kms_client()
             key_name = self._get_kms_key_version_name(client)
             pub_resp = client.get_public_key(request={"name": key_name})
             public_key = serialization.load_pem_public_key(pub_resp.pem.encode("utf-8"))
