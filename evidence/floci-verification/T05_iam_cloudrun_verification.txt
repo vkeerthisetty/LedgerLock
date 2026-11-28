@@ -1,0 +1,24 @@
+Test ID: T05-IAM-CLOUDRUN-VERIFICATION
+Phase: Floci Security Review & IAM / Cloud Run Verification
+Reviewer: Jaanvi (Cloud Security Engineer)
+Workspace Configuration (Sanitized):
+- Project ID: floci-local
+- Region: us-central1
+- Shared Floci Endpoint: http://localhost:4588
+- Firestore Emulator Host: localhost:4588
+- Firestore Collection: audit_ledger_floci
+- KMS Key Ring / Key / Version: ledgerlock-keyring / checkpoint-signer / v1 (EC P-256)
+
+Service & Operation Verification Status:
+1. Firestore synthetic write & sequence-ordered read: VERIFIED (Floci local emulator; persists across FastAPI restarts)
+2. Cloud KMS EC P-256 signing & public-key verification: VERIFIED (Floci local emulator; SHA-256 digest + get_public_key)
+3. Sanitized Cloud Logging write & read: VERIFIED (Floci local emulator; field allowlist + regex redaction enforced)
+4. Runtime Service Identity (ledgerlock-sa): DOCUMENTED DESIGN / UNENFORCED IN FLOCI (Floci runs credential-free)
+5. Least-Privilege IAM Roles (roles/datastore.user, roles/cloudkms.signerVerifier, roles/logging.logWriter): DOCUMENTED DESIGN / UNENFORCED IN FLOCI
+6. Cloud Run Authenticated Deployment (--no-allow-unauthenticated): PREPARED / UNTESTED LIVE (No live GCP sandbox; floci-local blocked from live deploy script)
+7. Logging Access Control & Retention Policies: UNTESTED LIVE (Requires live GCP Cloud Logging IAM & bucket retention configuration)
+
+Security & Secret Hygiene Check:
+- Private keys exported or stored: NONE
+- Service account JSON credentials committed: NONE
+- Live tokens/passwords/personal details included: NONE
