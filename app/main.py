@@ -1,3 +1,4 @@
+
 """FastAPI entry point for the LedgerLock integration baseline."""
 
 from __future__ import annotations
@@ -11,9 +12,10 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.exceptions import HTTPException as StarletteHTTPException
-from signing.kms_adapter import CheckpointSignerAdapter
 
+from signing.kms_adapter import CheckpointSignerAdapter
 from app.api import router
+from app.cloud_logging import SecurityLoggerAdapter
 from app.local_storage import LocalLedgerStorage
 from app.security_logging import log_security_event
 from storage.firestore_adapter import LedgerStorageAdapter
@@ -37,20 +39,28 @@ app = FastAPI(
     version="0.1.0",
 )
 
-# Local mode preserves the existing in-memory ledger.
-# Cloud mode uses the Firestore adapter.
+# Configure storage.
 if USE_CLOUD_SERVICES:
     app.state.storage = LedgerStorageAdapter(use_cloud=True)
     app.state.ledger = None
 else:
     app.state.storage = LocalLedgerStorage()
-    # Keep this alias for existing tests and compatibility.
     app.state.ledger = app.state.storage.ledger
 
+# Restore the saved checkpoint.
 app.state.checkpoint = app.state.storage.get_checkpoint()
+
+# Configure checkpoint signing.
 app.state.signer = CheckpointSignerAdapter(
     use_cloud=USE_CLOUD_SERVICES
 )
+
+# Configure the security logger used by app/api.py.
+app.state.security_logger = SecurityLoggerAdapter(
+    use_cloud=USE_CLOUD_SERVICES
+)
+app.state.logging_degraded = False
+
 app.include_router(router)
 
 app.mount(
@@ -58,6 +68,7 @@ app.mount(
     StaticFiles(directory=BASE_DIR / "static"),
     name="static",
 )
+
 templates = Jinja2Templates(directory=BASE_DIR / "templates")
 
 
@@ -66,9 +77,8 @@ async def safe_http_exception_handler(
     request: Request,
     exc: StarletteHTTPException,
 ) -> JSONResponse:
-    """Return controlled HTTP errors without internal details."""
-
     del request
+
     messages = {
         401: "Authentication is required.",
         403: "You are not authorised to perform this operation.",
@@ -78,6 +88,7 @@ async def safe_http_exception_handler(
         429: "Too many requests. Please try again later.",
         503: "The requested security service is not configured.",
     }
+
     return JSONResponse(
         status_code=exc.status_code,
         content={
@@ -97,9 +108,8 @@ async def safe_validation_exception_handler(
     request: Request,
     exc: RequestValidationError,
 ) -> JSONResponse:
-    """Return safe validation information without submitted values."""
-
     del request
+
     errors = [
         {
             "field": ".".join(str(part) for part in error["loc"][1:]),
@@ -107,8 +117,10 @@ async def safe_validation_exception_handler(
         }
         for error in exc.errors()
     ]
+
     fields = list(dict.fromkeys(error["field"] for error in errors))
     message = "Request validation failed."
+
     return JSONResponse(
         status_code=422,
         content={
@@ -128,14 +140,14 @@ async def safe_unexpected_exception_handler(
     request: Request,
     exc: Exception,
 ) -> JSONResponse:
-    """Hide internal exception details from API clients."""
-
     del request, exc
+
     log_security_event(
         event_type="application_error",
         outcome="failure",
         error_category="unexpected_error",
     )
+
     return JSONResponse(
         status_code=500,
         content={
@@ -151,8 +163,6 @@ async def safe_unexpected_exception_handler(
 
 @app.get("/", response_class=HTMLResponse)
 async def dashboard(request: Request) -> HTMLResponse:
-    """Render the dashboard with an explicit API-mode label."""
-
     return templates.TemplateResponse(
         request=request,
         name="index.html",
@@ -160,11 +170,8 @@ async def dashboard(request: Request) -> HTMLResponse:
     )
 
 
-
 @app.get("/api/health")
 async def health() -> dict[str, str]:
-    """Return a non-sensitive health response."""
-
     return {
         "status": "ok",
         "service": "ledgerlock-api",
