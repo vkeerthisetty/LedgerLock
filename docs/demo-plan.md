@@ -86,7 +86,8 @@ Run or show the saved output from:
 
 - Show that Firestore, KMS and Logging report `running`.
 - Explain the synthetic Firestore write/read, EC P-256 sign/verify and sanitized log write/read.
-- State clearly that this is free local Floci-GCP, not a real GCP account and not yet connected to the public website.
+- Show the FastAPI restart test proving local Floci Firestore persistence and KMS checkpoint recovery.
+- State clearly that this is free local Floci-GCP, not a real GCP account and not the public Render environment.
 
 ### 8:15-9:00 - Regression and deployment
 
@@ -100,7 +101,7 @@ Run or show the saved output from:
 - Explain that hash chaining provides tamper evidence, not immutability.
 - Explain why process memory is not durable.
 - Explain why local HMAC is not Cloud KMS evidence.
-- Identify Firestore, KMS and Logging as verified in Floci only; Cloud Run runtime, IAM and active FastAPI cloud wiring remain unverified.
+- Identify Firestore, KMS and sanitized security logging as active in local Floci FastAPI mode. Cloud Run runtime, IAM and real GCP remain unverified.
 
 ### 9:30-10:00 - Release decision and next steps
 
@@ -124,7 +125,7 @@ No. The active ledger is process memory and can reset on restart or redeployment
 
 **Is Firestore or Cloud KMS working?**
 
-Yes, their adapters passed a real protocol round trip against local Floci-GCP. They are not yet connected to the active website and were not tested in a paid or real Google Cloud project.
+Yes, Firestore and KMS passed a real protocol round trip through FastAPI in local Floci cloud mode, including restart persistence. The public Render website still uses memory, and no paid or real Google Cloud project was tested.
 
 **Does LedgerLock prove the original event was true?**
 

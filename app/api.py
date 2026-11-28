@@ -55,15 +55,36 @@ def _get_checkpoint(request: Request):
     return request.app.state.checkpoint
 
 
+def _write_security_log(request: Request, **fields: Any) -> None:
+    """Write sanitized metadata without failing the user operation."""
+    try:
+        request.app.state.security_logger.log_event(fields)
+    except Exception:
+        request.app.state.logging_degraded = True
+
+
 @router.post("/api/events", status_code=201)
 def add_event(event: EventInput, request: Request):
     try:
-        return request.app.state.storage.add_event(event.model_dump())
+        record = request.app.state.storage.add_event(event.model_dump())
     except Exception:
+        _write_security_log(
+            request,
+            event_type="EVENT_CREATE",
+            outcome="FAILURE",
+            error_category="STORAGE_UNAVAILABLE",
+        )
         raise HTTPException(
             status_code=503,
             detail="The ledger storage service is unavailable.",
         )
+    _write_security_log(
+        request,
+        event_type="EVENT_CREATE",
+        outcome="SUCCESS",
+        request_id=record.get("request_id"),
+    )
+    return record
 
 
 @router.get("/api/ledger")
@@ -108,9 +129,20 @@ def verify_ledger(request: Request):
             try:
                 signer = request.app.state.signer
                 payload = _checkpoint_payload(checkpoint)
-                checkpoint_valid, _ = signer.verify_checkpoint(
+                signature_valid, _ = signer.verify_checkpoint(
                     payload,
                     checkpoint.get("signature", ""),
+                )
+                if records:
+                    latest_sequence = records[-1].get("sequence")
+                    latest_hash = records[-1].get("current_hash")
+                else:
+                    latest_sequence = None
+                    latest_hash = None
+                checkpoint_valid = (
+                    signature_valid
+                    and checkpoint.get("latest_sequence") == latest_sequence
+                    and checkpoint.get("latest_hash") == latest_hash
                 )
             except Exception:
                 checkpoint_valid = False
@@ -121,6 +153,20 @@ def verify_ledger(request: Request):
                 checkpoint,
                 CHECKPOINT_SECRET,
             )
+
+    _write_security_log(
+        request,
+        event_type="LEDGER_VERIFY",
+        outcome="SUCCESS" if result["valid"] else "FAILURE",
+        verification_result=(
+            "FAIL"
+            if not result["valid"]
+            else "PASS"
+            if checkpoint_valid
+            else "CHAIN_ONLY"
+        ),
+        failed_sequence=result["failed_sequence"],
+    )
 
     return {
         "valid": result["valid"],
@@ -143,6 +189,12 @@ def make_checkpoint(
     x_admin_token: str = Header(default=""),
 ):
     if not ADMIN_TOKEN or x_admin_token != ADMIN_TOKEN:
+        _write_security_log(
+            request,
+            event_type="CHECKPOINT_CREATE",
+            outcome="DENIED",
+            error_category="AUTHORIZATION_FAILED",
+        )
         raise HTTPException(status_code=403, detail="Not authorised.")
 
     try:
@@ -197,10 +249,23 @@ def make_checkpoint(
     except HTTPException:
         raise
     except Exception:
+        _write_security_log(
+            request,
+            event_type="CHECKPOINT_CREATE",
+            outcome="FAILURE",
+            error_category="SIGNING_UNAVAILABLE",
+        )
         raise HTTPException(
             status_code=503,
             detail="Checkpoint signing service is unavailable.",
         )
+
+    _write_security_log(
+        request,
+        event_type="CHECKPOINT_CREATE",
+        outcome="SUCCESS",
+        verification_result="SIGNED",
+    )
 
     return {
         "status": "created",

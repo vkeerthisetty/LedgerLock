@@ -51,7 +51,7 @@
 - Severity: High
 - Status: Open
 - Impact: Render restart or redeployment can remove audit history and checkpoint state.
-- Recommendation: Integrate and verify Firestore with concurrency-safe sequence allocation.
+- Recommendation: Keep Render's disposable-state warning until the reviewed cloud mode is intentionally deployed; Floci already verifies transactional sequence allocation and API-restart persistence.
 
 ### F-007 - Event creation lacks user authentication
 
@@ -64,9 +64,9 @@
 ### F-008 - Cloud simulation could be overstated
 
 - Severity: Medium
-- Status: Controlled by documentation; operational verification pending
-- Control: Adapter mode labels, disabled-cloud default and explicit report limitations.
-- Recommendation: Convert service claims to verified only after Floci/live evidence exists.
+- Status: Controlled; operationally verified in local Floci only
+- Control: Adapter mode labels, disabled-cloud default, Floci runtime evidence and explicit real-GCP limitations.
+- Recommendation: Continue distinguishing local Floci evidence from real GCP and public Render behavior.
 
 ## Review summary
 

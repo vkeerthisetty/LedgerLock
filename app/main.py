@@ -14,6 +14,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from signing.kms_adapter import CheckpointSignerAdapter
 
 from app.api import router
+from app.cloud_logging import SecurityLoggerAdapter
 from app.local_storage import LocalLedgerStorage
 from app.security_logging import log_security_event
 from storage.firestore_adapter import LedgerStorageAdapter
@@ -51,6 +52,14 @@ app.state.checkpoint = app.state.storage.get_checkpoint()
 app.state.signer = CheckpointSignerAdapter(
     use_cloud=USE_CLOUD_SERVICES
 )
+app.state.security_logger = SecurityLoggerAdapter(
+    use_cloud=USE_CLOUD_SERVICES,
+    local_log_path=os.getenv(
+        "LEDGERLOCK_SECURITY_LOG_PATH",
+        "data/security_events.jsonl",
+    ),
+)
+app.state.logging_degraded = False
 app.include_router(router)
 
 app.mount(
@@ -130,12 +139,22 @@ async def safe_unexpected_exception_handler(
 ) -> JSONResponse:
     """Hide internal exception details from API clients."""
 
-    del request, exc
-    log_security_event(
-        event_type="application_error",
-        outcome="failure",
-        error_category="unexpected_error",
-    )
+    del exc
+    try:
+        request.app.state.security_logger.log_event(
+            {
+                "event_type": "APPLICATION_ERROR",
+                "outcome": "FAILURE",
+                "error_category": "UNEXPECTED_ERROR",
+            }
+        )
+    except Exception:
+        request.app.state.logging_degraded = True
+        log_security_event(
+            event_type="application_error",
+            outcome="failure",
+            error_category="unexpected_error",
+        )
     return JSONResponse(
         status_code=500,
         content={

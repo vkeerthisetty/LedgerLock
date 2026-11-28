@@ -17,7 +17,9 @@
 - `infra/bootstrap_floci.py` creates only local KMS resources using an insecure localhost gRPC channel.
 - `tests/test_floci_integration.py` is opt-in through `RUN_FLOCI_INTEGRATION=true`.
 - Reproduction evidence is stored in `evidence/floci/integration-output.txt`.
-- The active FastAPI application remains in-memory; adapter verification is not application integration.
+- FastAPI cloud mode uses Firestore records and KMS checkpoints and passed a restart-persistence test.
+- Public Render deliberately keeps cloud mode disabled and remains in-memory.
+- FastAPI cloud mode writes allowlisted event-creation, verification and checkpoint security metadata to Cloud Logging.
 
 ## 2. Least-Privilege IAM Design (`ledgerlock-sa`)
 - `roles/datastore.user`: Read/write synthetic audit documents in Firestore.

@@ -16,17 +16,21 @@ Bootstrap result:
   key ring already exists: projects/floci-local/locations/us-central1/keyRings/ledgerlock-keyring
   signing key already exists: projects/floci-local/locations/us-central1/keyRings/ledgerlock-keyring/cryptoKeys/checkpoint-signer
 
-Test:
+Tests:
   tests/test_floci_integration.py::test_floci_firestore_kms_and_logging_round_trip PASSED
-  1 passed
+  tests/test_floci_runtime_api.py::test_cloud_mode_persists_records_and_kms_checkpoint_across_restart PASSED
+  2 passed
 
 Verified operations:
   - Firestore: unique synthetic document written and read back in sequence order.
   - Cloud KMS: EC_SIGN_P256_SHA256 signature created and verified with the public key.
   - Cloud Logging: allowlisted structured entry written and read back; unapproved field absent.
+  - FastAPI cloud mode: records and KMS checkpoint survived an API restart.
+  - Checkpoint freshness: a later record kept the chain valid but made the older checkpoint invalid.
   - No private key, personal credential, service-account file or billing account was used.
 
 Limitations:
   - This is local Floci-GCP evidence, not a real Google Cloud deployment.
-  - The active FastAPI application still uses its in-memory ledger and local checkpoint.
+  - Public Render still uses its in-memory ledger and local checkpoint.
+  - Public Render does not use the local Floci Firestore, KMS or Logging services.
   - Cloud Run runtime and IAM enforcement were not tested in this execution.

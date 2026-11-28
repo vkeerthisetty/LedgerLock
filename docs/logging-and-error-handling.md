@@ -32,7 +32,7 @@ Responses must not expose exception details, stack traces, credentials, key mate
 Log access should follow least privilege. Application components may write approved events; only authorised administrators should access security logs.
 
 ## Implementation status
-The application currently has safe error handlers and a tested security-logging utility. The logging utility is not yet wired into event API routes. Authentication, authorisation, production log access, and cloud IAM controls require separate implementation and verification.
+The application has safe error handlers and a tested security-logging utility. In Floci cloud mode, event creation, verification and checkpoint paths write only allowlisted metadata through the Cloud Logging adapter. Authentication, production log access and cloud IAM controls still require separate implementation and verification.
 
 ## Evidence
 - T06: safe-error handling tests.

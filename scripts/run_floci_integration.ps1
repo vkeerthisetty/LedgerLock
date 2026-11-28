@@ -32,6 +32,7 @@ $env:KMS_KEY_NAME = "checkpoint-signer"
 $env:KMS_KEY_VERSION = "1"
 $env:CLOUD_LOG_NAME = "ledgerlock-audit-events"
 $env:RUN_FLOCI_INTEGRATION = "true"
+$env:RUN_FLOCI_RUNTIME = "true"
 
 Push-Location $repoRoot
 try {
@@ -59,7 +60,7 @@ try {
     }
 
     & $python infra\bootstrap_floci.py
-    & $python -m pytest tests\test_floci_integration.py -v -p no:cacheprovider
+    & $python -m pytest tests\test_floci_integration.py tests\test_floci_runtime_api.py -v -p no:cacheprovider
     if ($LASTEXITCODE -ne 0) {
         throw "Floci integration test failed with exit code $LASTEXITCODE."
     }

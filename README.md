@@ -2,7 +2,7 @@
 
 LedgerLock is a tamper-evident audit-ledger project. The application will create canonical audit records, link them with SHA-256 hashes, retain a trusted signed checkpoint, and report when a stored chain no longer verifies.
 
-This repository currently contains the demonstration frontend, an integrated in-memory hash-chain API, security architecture documents, CI checks, and project coordination material. The browser starts in an explicitly labelled mock mode. Mock mode is not cryptographic or cloud-integration evidence. Live mode connects to the local API, but the current in-memory storage is disposable and is not evidence of Firestore, Cloud KMS, Cloud Run, Cloud Logging, or signed-checkpoint integration.
+This repository contains the demonstration frontend, FastAPI hash-chain API, local and Floci-GCP runtime modes, security architecture documents, CI checks, and project coordination material. The browser starts in an explicitly labelled mock mode. Default live mode uses disposable process memory. When cloud services are explicitly enabled for the local Floci environment, FastAPI uses transactional Firestore storage, KMS checkpoint signing and sanitized Cloud Logging; this is emulator evidence, not real GCP evidence.
 
 ## Current responsibility boundaries
 
@@ -30,7 +30,7 @@ This repository currently contains the demonstration frontend, an integrated in-
 
 5. Open `http://127.0.0.1:8000`.
 
-The default `LEDGERLOCK_API_MODE=mock` enables a browser-only synthetic preview. To exercise the integrated local API, set `LEDGERLOCK_API_MODE=live` before starting Uvicorn. Live mode currently uses disposable process memory; restarting the server clears the ledger.
+The default `LEDGERLOCK_API_MODE=mock` enables a browser-only synthetic preview. To exercise the integrated local API, set `LEDGERLOCK_API_MODE=live` before starting Uvicorn. With `USE_CLOUD_SERVICES=false`, restarting the server clears the disposable ledger. The Floci run script enables cloud mode only against `localhost:4588`.
 
 Implemented locally:
 
@@ -62,6 +62,12 @@ EC P-256 signing key, and verifies a synthetic Firestore write/read, Cloud KMS
 sign/verify round trip, and redacted Cloud Logging write/read. The opt-in test is
 skipped during ordinary unit/CI runs so it cannot accidentally contact a real
 cloud service. Stop the emulator without deleting its local volume using:
+
+The same script also starts FastAPI in cloud mode, creates and checkpoints
+synthetic records, restarts the API, verifies Firestore persistence and the KMS
+checkpoint, and confirms that appending a later record makes the old checkpoint
+stale. The public Render deployment keeps cloud services disabled and remains
+an in-memory demonstration.
 
 ```powershell
 docker compose -f docker-compose.floci.yml down

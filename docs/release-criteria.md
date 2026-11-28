@@ -27,6 +27,7 @@
 - [x] Render deployment is live and health-checked.
 - [x] Cloud claims are labelled verified, simulated or untested.
 - [x] Floci-GCP and required Firestore, KMS and Logging service availability are verified.
+- [x] FastAPI cloud mode persists records and KMS checkpoints across an API restart.
 - [ ] Firestore persistence and concurrency behavior are verified.
 - [ ] Least-privilege runtime identity is verified.
 - [x] Floci Cloud Logging delivery and redaction are verified.
@@ -78,7 +79,7 @@
 
 **Controlled local/Render demonstration: approved with conditions.**
 
-Conditions: use synthetic data, state that the active website still uses disposable process memory, label HMAC as local, and describe Firestore, KMS and Logging only as **verified in local Floci-GCP**, not as active website or real GCP services.
+Conditions: use synthetic data, state that the public Render website still uses disposable process memory, label HMAC as local, and describe Firestore, KMS and sanitized security logging as active only in local Floci cloud mode. None of this is real GCP evidence.
 
 **Complete cloud release: not approved.**
 

@@ -6,9 +6,9 @@ LedgerLock is a defensive cybersecurity demonstration that creates synthetic aud
 
 The application is deployed at `https://ledgerlock-mt0u.onrender.com/`. On 28 November 2026 the public health endpoint returned `status=ok`, `service=ledgerlock-api` and `environment=production`. A synthetic event was created, retrieved and verified successfully. A checkpoint request without the administrator token returned HTTP 403. The deployed process still stores the active ledger and checkpoint in memory; records can therefore be lost when Render restarts or redeploys the service.
 
-On 28 November 2026, a local Floci-GCP 0.13.0 integration test verified Firestore write/read ordering, Cloud KMS-compatible EC P-256 asymmetric signing and public-key verification, and Cloud Logging write/read with sanitized fields. This is operational local-emulator evidence. It is not a real Google Cloud deployment, and the active FastAPI website is not yet wired to these adapters.
+On 28 November 2026, local Floci-GCP 0.13.0 tests verified Firestore write/read ordering, Cloud KMS-compatible EC P-256 asymmetric signing and public-key verification, and Cloud Logging write/read with sanitized fields. FastAPI cloud mode then created records and a KMS checkpoint, restarted, recovered both, and detected that an older checkpoint became stale after a later record. This is operational local-emulator evidence, not a real Google Cloud deployment. Public Render remains in-memory.
 
-**Release decision:** approved for a controlled local or Render-hosted synthetic demonstration with documented limitations. It is **not approved as a complete durable cloud audit trail**. Firestore, KMS and Logging may be described only as verified in local Floci-GCP; Cloud Run runtime, IAM enforcement, real GCP and active-website cloud integration remain unverified.
+**Release decision:** approved for a controlled local or Render-hosted synthetic demonstration with documented limitations. It is **not approved as a complete durable cloud audit trail**. Firestore, KMS and sanitized security logging are active only in local Floci cloud mode. Cloud Run runtime, IAM enforcement, real GCP and public-website cloud integration remain unverified.
 
 ## 2. Scope and Method
 
@@ -31,7 +31,7 @@ The assessment did not use real student information, production credentials or d
 
 The browser collects synthetic event fields and sends live-mode requests to FastAPI. FastAPI validates field types, lengths, enumerated values and unexpected fields. It assigns the identifier, UTC timestamp, sequence number, request identifier, previous hash and current hash. The browser never calculates authoritative hashes and does not directly access storage or signing services.
 
-The current runtime uses an in-memory `AuditLedger`. Each record hash is calculated from canonical UTF-8 JSON with stable key ordering, excluding the record's own `current_hash`. Verification checks sequential numbering, the previous-hash relationship and the recalculated current hash.
+Default and public Render runtime use an in-memory `AuditLedger`. When `USE_CLOUD_SERVICES=true`, FastAPI uses transactional Firestore record storage and persisted KMS checkpoints. Each record hash is calculated from canonical UTF-8 JSON with stable key ordering, excluding the record's own `current_hash`. Verification checks sequential numbering, the previous-hash relationship and the recalculated current hash.
 
 The local checkpoint signs the latest sequence and hash using HMAC-SHA256. Checkpoint creation requires the configured administrator token. This protects the local demonstration against unauthorized checkpoint creation but is not equivalent to asymmetric Cloud KMS signing because the local application holds the shared secret.
 
@@ -79,7 +79,7 @@ Records receive a server-generated sequence and `previous_hash`. The verifier re
 
 The local checkpoint covers schema version, latest sequence, latest hash and key version. HMAC comparison uses constant-time verification. The endpoint rejects missing or incorrect administrator tokens, invalid ledgers and missing signing configuration. The endpoint does not return the shared secret or raw stored checkpoint.
 
-The active API control is accurately labelled local HMAC-SHA256. Separately, the KMS adapter completed an EC P-256 asymmetric sign/public-key verify round trip in Floci-GCP. The active API does not yet use that adapter.
+The default API control is accurately labelled local HMAC-SHA256. In Floci cloud mode, the active checkpoint endpoint uses the KMS adapter for EC P-256 signing and public-key verification and persists the checkpoint in Firestore.
 
 ### 6.4 Logging and data minimisation
 
@@ -106,7 +106,7 @@ The local HMAC checkpoint improves the demonstration by detecting a changed chai
 | T05 | Report distinguishes tamper evidence from immutability | PASS | Reporting and claim-boundary requirement |
 | T06 | Controlled unexpected error is safe and logged | PASS | Local application handler and sanitized event |
 | T07 | Source, outputs and local logs inspected for sensitive data | PASS WITH LIMITATIONS | Floci Logging write/read verified; real GCP access and retention not inspected |
-| T08 | Complete automated suite is reproducible | PASS FOR IMPLEMENTED SCOPE | 33 `unittest`, 37 ordinary `pytest`, and 1 opt-in Floci integration test passed locally |
+| T08 | Complete automated suite is reproducible | PASS FOR IMPLEMENTED SCOPE | 33 `unittest`, 37 ordinary `pytest`, and 2 opt-in Floci integration tests passed locally |
 
 Detailed commands, expected results, observations and limitations are indexed in `evidence/test-matrix.md`.
 
@@ -136,8 +136,8 @@ The local Floci-GCP execution additionally observed:
 - Render restarts and redeployments clear the active ledger and checkpoint.
 - Event creation is intentionally public for the synthetic demonstration and has no user authentication.
 - The active API's local HMAC is not KMS signing; the separate adapter is verified only in Floci.
-- Firestore code exists but is not connected to the active FastAPI ledger.
-- Firestore concurrency and restart persistence are not verified.
+- Firestore concurrency and API-restart persistence are verified only in local Floci.
+- Cloud-mode event creation, verification and checkpoint security events are written through the sanitized logging adapter.
 - Real GCP Firestore, KMS and Logging are not verified.
 - Cloud Run runtime and IAM enforcement are not verified.
 - Local adapter tests do not substitute for service-side authorization evidence.
@@ -147,22 +147,19 @@ The local Floci-GCP execution additionally observed:
 
 **Controlled demonstration: approved with conditions.**
 
-The application may be demonstrated locally or on Render using synthetic data, provided the presenter states that storage is disposable and cloud services are unverified. The implementation must not be described as immutable, production-ready or fully cloud-integrated.
+The application may be demonstrated locally or on Render using synthetic data. The presenter must state that Render storage is disposable and that Firestore, KMS and Logging are verified only in local Floci cloud mode. The implementation must not be described as immutable, production-ready or verified in real GCP.
 
 **Complete cloud release: not approved.** Approval requires:
 
-1. Connect the verified Floci Firestore adapter to FastAPI with safe sequence allocation and restart-persistence evidence.
-2. Connect the verified Floci KMS signer to active checkpoint creation and verification.
-3. Connect verified structured logging to the active application.
-4. Complete least-privilege IAM and checkpoint authorization review.
-5. Verify Cloud Run runtime if required by the assigned environment.
-6. Repeat T01-T08 on the final integrated revision.
+1. Complete least-privilege IAM and checkpoint authorization review.
+2. Verify Cloud Run runtime if required by the assigned environment.
+3. Repeat T01-T08 on the final reviewed revision.
 
 ## 12. Ownership and Next Steps
 
 - **Jyoshitha:** final architecture, data-flow, threat and release-boundary review.
 - **Jaanvi:** review Floci Firestore, KMS and Logging evidence; complete IAM and Cloud Run review.
-- **Syed:** connect the verified storage and signer interfaces to FastAPI and test persistence.
+- **Syed:** review the merged FastAPI storage/signer integration and restart-persistence evidence.
 - **Omar:** authorization, data minimisation, error/log review and T04/T06/T07 approval.
 - **Keerthi:** coordination, frontend, integration, evidence index, final report and demonstration.
 

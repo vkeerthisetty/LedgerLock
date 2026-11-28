@@ -35,6 +35,9 @@ class LedgerStorageAdapter:
         self.collection_name = os.getenv(
             "FIRESTORE_COLLECTION", "audit_ledger"
         )
+        self.metadata_collection_name = (
+            f"_{self.collection_name}_metadata"
+        )
 
         if not self.use_cloud:
             self.local_path.parent.mkdir(parents=True, exist_ok=True)
@@ -108,7 +111,7 @@ class LedgerStorageAdapter:
         db = self._client()
         records_ref = db.collection(self.collection_name)
 
-        metadata_ref = db.collection("_ledger_metadata")
+        metadata_ref = db.collection(self.metadata_collection_name)
         counter_ref = metadata_ref.document("sequence_counter")
 
         transaction = db.transaction()
@@ -228,7 +231,7 @@ class LedgerStorageAdapter:
         db = self._client()
 
         counter_ref = db.collection(
-            "_ledger_metadata"
+            self.metadata_collection_name
         ).document("sequence_counter")
 
         transaction = db.transaction()
@@ -260,7 +263,7 @@ class LedgerStorageAdapter:
         if self.use_cloud:
             db = self._client()
 
-            db.collection("_ledger_metadata").document(
+            db.collection(self.metadata_collection_name).document(
                 "checkpoint"
             ).set(checkpoint)
 
@@ -277,7 +280,7 @@ class LedgerStorageAdapter:
             db = self._client()
 
             snapshot = (
-                db.collection("_ledger_metadata")
+                db.collection(self.metadata_collection_name)
                 .document("checkpoint")
                 .get()
             )

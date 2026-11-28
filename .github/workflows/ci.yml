@@ -108,6 +108,7 @@ jobs:
       - name: Verify Firestore, KMS and Logging
         env:
           RUN_FLOCI_INTEGRATION: "true"
+          RUN_FLOCI_RUNTIME: "true"
           USE_CLOUD_SERVICES: "true"
           GCP_PROJECT_ID: floci-local
           GOOGLE_CLOUD_PROJECT: floci-local
@@ -119,7 +120,7 @@ jobs:
           KMS_KEY_NAME: checkpoint-signer
           KMS_KEY_VERSION: "1"
           CLOUD_LOG_NAME: ledgerlock-audit-events
-        run: python -m pytest tests/test_floci_integration.py -v -p no:cacheprovider
+        run: python -m pytest tests/test_floci_integration.py tests/test_floci_runtime_api.py -v -p no:cacheprovider
 
       - name: Show Floci logs after failure
         if: failure()

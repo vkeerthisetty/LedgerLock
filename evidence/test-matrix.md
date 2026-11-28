@@ -15,8 +15,8 @@
 | T05 | Report distinguishes tamper evidence from immutability | PASS | `evidence/T05/claim-boundary.md` | Cloud durability remains pending |
 | T06 | Controlled unexpected error is safe and logged | PASS | `evidence/T06/verification-output.txt` | Local handler/log only |
 | T07 | Source, output and local logs contain no observed secrets | PASS WITH LIMITATIONS | `evidence/T07/repository-scan.txt`; `evidence/floci/integration-output.txt` | Floci Logging write/read verified; real GCP retention and access not inspected |
-| T08 | Complete implemented test set is reproducible | PASS FOR IMPLEMENTED SCOPE | `evidence/T08/regression-output.txt`; `evidence/floci/integration-output.txt` | Cloud Run runtime, IAM enforcement and active FastAPI cloud wiring excluded |
+| T08 | Complete implemented test set is reproducible | PASS FOR IMPLEMENTED SCOPE | `evidence/T08/regression-output.txt`; `evidence/floci/integration-output.txt` | Cloud Run runtime, IAM enforcement and real GCP excluded |
 
 ## Interpretation
 
-PASS applies only to the stated scope and evidence. The local Floci-GCP test establishes Firestore adapter write/read, KMS asymmetric sign/verify and Cloud Logging write/read against the emulator. It does not establish a real GCP deployment, Cloud Run runtime, IAM enforcement or active FastAPI use of those services.
+PASS applies only to the stated scope and evidence. Local Floci-GCP tests establish Firestore persistence through a FastAPI restart, active KMS checkpoint signing/verification, checkpoint freshness, and sanitized runtime security-log write/read. They do not establish a real GCP deployment, Cloud Run runtime or IAM enforcement.
