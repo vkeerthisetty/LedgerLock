@@ -59,6 +59,11 @@ class RepositoryFoundationTests(unittest.TestCase):
         self.assertIn("frontend preview only", html)
         self.assertIn("not cryptographic or cloud-integration evidence", readme)
 
+    def test_evidence_panel_does_not_claim_zero_coverage(self) -> None:
+        html = self.read("app/templates/index.html")
+        self.assertNotIn("0 / 8", html)
+        self.assertIn("Evidence coverage", html)
+
     def test_hidden_regions_cannot_be_forced_visible_by_component_css(self) -> None:
         css = self.read("app/static/css/styles.css").replace(" ", "")
         self.assertIn("[hidden]{display:none!important}", css)

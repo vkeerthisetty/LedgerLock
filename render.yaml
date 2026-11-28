@@ -10,6 +10,8 @@ services:
     healthCheckPath: /api/health
     autoDeployTrigger: checksPass
     envVars:
+      - key: LEDGERLOCK_ENV
+        value: production
       - key: LEDGERLOCK_API_MODE
         value: live
       - key: USE_CLOUD_SERVICES

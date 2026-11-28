@@ -19,6 +19,7 @@ from app.security_logging import log_security_event
 
 BASE_DIR = Path(__file__).resolve().parent
 API_MODE = os.getenv("LEDGERLOCK_API_MODE", "mock").strip().lower()
+APP_ENV = os.getenv("LEDGERLOCK_ENV", "development").strip().lower()
 
 if API_MODE not in {"mock", "live"}:
     raise RuntimeError(
@@ -150,5 +151,5 @@ async def health() -> dict[str, str]:
     return {
         "status": "ok",
         "service": "ledgerlock-api",
-        "environment": "development",
+        "environment": APP_ENV,
     }
