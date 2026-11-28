@@ -5,7 +5,6 @@ from typing import Any
 from app.ledger_core import AuditLedger
 from app.storage import LedgerStorage
 
-
 class LocalLedgerStorage:
     """Use the existing in-memory ledger for local development."""
 
