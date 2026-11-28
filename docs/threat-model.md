@@ -340,3 +340,42 @@ Its security depends on the combined use of hash chaining, trusted checkpoints, 
 Local development, Floci verification and the active Render deployment must be assessed separately.
 
 The system must be tested against the identified threats before release.
+
+## Cloud Integration Threats and Risks
+
+The following are target-architecture risks. Mitigations listed here are requirements, not claims that controls are already implemented.
+
+### Firestore
+- Excessive IAM permissions could allow unauthorized reading, modification or deletion of ledger records.
+- Concurrent API instances could allocate duplicate sequences or overwrite records if sequence allocation is not atomic.
+- Replayed or modified records could undermine ledger integrity if verification and checkpoint consistency are not enforced.
+- Compromised service credentials could expose synthetic test data and ledger operations.
+
+Required controls: least-privilege service identities, transactional sequence allocation, integrity verification, controlled retention and audit logging.
+
+### Cloud KMS
+- Unauthorized signing permissions could allow forged checkpoints.
+- Incorrect key versions or algorithms could cause verification failures or trust confusion.
+- Key deletion, disabling or rotation could affect checkpoint verification.
+- Local HMAC output could be incorrectly presented as Cloud KMS evidence.
+
+Required controls: non-exportable private keys, restricted signing permissions, explicit key-version identification, public-key signature verification and auditable key operations. Keep local HMAC clearly separated from KMS.
+
+### Cloud Logging
+- Sensitive data could leak through logs.
+- Log injection or forged events could mislead incident investigation.
+- Excessive permissions could allow unauthorized log access or deletion.
+- Logging outages or an unwired adapter could leave security events unavailable.
+- Redaction rules may not detect every secret format.
+
+Required controls: allowlisted and sanitized fields, restricted access, appropriate retention, delivery monitoring and tests using synthetic data.
+
+### Deployment and Identity
+- Cloud Run service identity may have excessive project-level permissions.
+- A service deployed with unauthenticated access disabled will require an appropriate authenticated client flow; the browser must not be assumed to provide a Google identity token automatically.
+- Render, Floci and Cloud Run configurations may differ and must be verified independently.
+
+Required controls: least-privilege IAM, explicit API authentication and authorization, and environment-specific deployment evidence.
+
+### Current Implementation Limitations
+The current in-memory ledger and process-local sequence allocation are not safe for multi-instance durable operation. The Firestore adapter is not wired into the FastAPI runtime. Cloud KMS and Cloud Logging adapters are also not wired into the active application path. These remain open integration risks.

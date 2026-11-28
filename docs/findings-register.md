@@ -1,4 +1,4 @@
-# LedgerLock Security Findings Register
+﻿# LedgerLock Security Findings Register
 
 ## 1. Purpose
 
@@ -34,7 +34,7 @@ The register distinguishes confirmed test observations from design risks and ite
 ### F-002 - Backend Input Validation and Authorization
 
 - Category: Input validation and access control
-- Severity: Medium – Provisional
+- Severity: Medium â€“ Provisional
 - Status: Validation tests passed; complete authorization review pending
 - Description: Browser-submitted event data must be validated by the backend. Sensitive operations must also require appropriate authorization.
 - Impact: Malformed or unauthorized input may create invalid or misleading records.
@@ -51,7 +51,7 @@ The register distinguishes confirmed test observations from design risks and ite
 ### F-003 - Checkpoint Signing Authority Requires Protection
 
 - Category: Key management
-- Severity: High – Provisional
+- Severity: High â€“ Provisional
 - Status: Local protection implemented; live KMS integration unverified
 - Description: The private signing key used for checkpoint signatures must not be exposed to unauthorized users or frontend code.
 - Impact: Unauthorized checkpoint signatures could undermine trust in verification.
@@ -69,7 +69,7 @@ The register distinguishes confirmed test observations from design risks and ite
 ### F-004 - Record Modification, Removal or Reordering
 
 - Category: Data integrity
-- Severity: High – Provisional
+- Severity: High â€“ Provisional
 - Status: Local chain integrity tests passed; trusted checkpoint verification remains unverified
 - Description: The system must detect unauthorized record modification, deletion and reordering within the protected verification scope.
 - Impact: Undetected changes may undermine audit reliability.
@@ -87,7 +87,7 @@ The register distinguishes confirmed test observations from design risks and ite
 ### F-005 - Sensitive Information in Errors or Logs
 
 - Category: Information disclosure
-- Severity: Medium – Provisional
+- Severity: Medium â€“ Provisional
 - Status: Application-level controls tested; live Cloud Logging review pending
 - Description: API responses and security logs must not expose private keys, credentials, tokens, internal paths, exception details or unnecessary complete event payloads.
 - Impact: Information disclosure may help attackers compromise the system.
@@ -106,7 +106,7 @@ The register distinguishes confirmed test observations from design risks and ite
 
 - Category: Data persistence and availability
 - Severity: High
-- Status: Open – Durable storage verification pending
+- Status: Open â€“ Durable storage verification pending
 - Description: Audit history and checkpoint state require durable storage. An in-memory or otherwise non-persistent deployment may lose data following a restart or redeployment.
 - Impact: Loss of audit history can undermine the reliability and availability of the ledger.
 - Recommendation:
@@ -121,8 +121,8 @@ The register distinguishes confirmed test observations from design risks and ite
 ### F-007 - Event Creation Lacks Verified User Authentication
 
 - Category: Authentication and access control
-- Severity: High – Provisional
-- Status: Open – Authentication review required
+- Severity: High â€“ Provisional
+- Status: Open â€“ Authentication review required
 - Description: The demonstration API must not be treated as a production system with verified user authentication unless the relevant controls are implemented and tested.
 - Impact: Unauthorized callers may be able to create synthetic events or access operations beyond their intended permissions.
 - Existing boundary: Checkpoint creation protection must be reviewed separately from ordinary event creation.
@@ -197,3 +197,53 @@ Outstanding findings: F-003, F-005, F-006, F-007 and F-008 require further verif
 Release recommendation: Controlled demonstration only, subject to project review and synthetic-data restrictions.
 
 Approval status: Pending team confirmation
+
+## Additional Cloud Architecture Findings
+
+### F-009 â€” API mode does not activate cloud services
+**Status:** OPEN
+**Evidence:** LEDGERLOCK_API_MODE selects frontend mock/API behaviour. It does not wire cloud adapters into FastAPI.
+**Risk:** A deployment may be mistaken for a live cloud deployment.
+**Action:** Separate frontend mode from cloud-adapter configuration and verify actual service connectivity.
+
+### F-010 â€” Checkpoint endpoint uses local HMAC
+**Status:** OPEN
+**Evidence:** The active checkpoint implementation uses HMAC-SHA256. The KMS adapter is not wired into the endpoint.
+**Risk:** Local signatures may be misrepresented as KMS-backed signatures.
+**Action:** Integrate KMS signing and public-key verification, then capture key-version and operation evidence.
+
+### F-011 â€” Ledger storage is currently in memory
+**Status:** OPEN
+**Evidence:** FastAPI initializes an in-memory AuditLedger. The Firestore adapter is not wired into the runtime.
+**Risk:** Records are lost on process restart and are not durably shared across instances.
+**Action:** Integrate Firestore and test persistence and retrieval.
+
+### F-012 â€” Sequence allocation is not distributed-safe
+**Status:** OPEN
+**Evidence:** Current sequence generation is process-local. The Firestore adapter writes documents by sequence and does not establish atomic allocation.
+**Risk:** Concurrent instances may create duplicate sequences or overwrite records.
+**Action:** Implement transactional sequence allocation and concurrency tests.
+
+### F-013 â€” Cloud Logging adapter is not active
+**Status:** OPEN
+**Evidence:** The active application uses the local Python security logger. The Cloud Logging adapter is not wired into the runtime.
+**Risk:** Cloud security events may not be delivered or retained.
+**Action:** Integrate Cloud Logging and verify delivery, access controls and sanitization.
+
+### F-014 â€” Cloud Run provisioning is incomplete or unverified
+**Status:** OPEN
+**Evidence:** The deployment script does not establish complete Firestore and KMS provisioning, key configuration or all required application environment settings.
+**Risk:** Deployment may succeed without a functioning cloud-backed ledger.
+**Action:** Complete provisioning and capture deployment and integration test evidence.
+
+### F-015 â€” IAM scope requires review
+**Status:** OPEN
+**Evidence:** The deployment script assigns project-level roles. Actual resource-level least-privilege configuration has not been verified.
+**Risk:** A compromised service identity may have broader access than required.
+**Action:** Review and reduce permissions, then retain IAM configuration evidence.
+
+### F-016 â€” Cloud Run client authentication flow needs validation
+**Status:** OPEN
+**Evidence:** The deployment script uses --no-allow-unauthenticated. The browser/API authentication flow has not been established by this deployment configuration.
+**Risk:** Legitimate browser requests may fail, or an unsafe workaround may expose the API.
+**Action:** Define and test an authenticated client-to-API flow. Keep Firestore and KMS inaccessible directly from the browser.
