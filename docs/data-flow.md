@@ -3,9 +3,11 @@
 
 ## 1. Purpose
 
-This document describes how audit-event data is intended to move through LedgerLock, from submission to storage and integrity verification.
+This document describes the intended movement of audit-event data through LedgerLock and distinguishes local development, Floci verification and the active Render deployment.
 
-LedgerLock is designed to create a tamper-evident audit trail using canonical records, SHA-256 hashing, hash chaining and trusted signed checkpoints.
+LedgerLock is designed to create a tamper-evident audit trail using canonical records, SHA-256 hashing, hash chaining and independently protected signed checkpoints.
+
+This document distinguishes implemented functionality from planned integrations and unverified deployment capabilities.
 
 ## 2. System Components
 
@@ -21,11 +23,61 @@ The intended system consists of:
 8. Verification Component – checks record and checkpoint integrity.
 9. Security Logger – records relevant security events without exposing secrets.
 
-## 3. Audit Event Submission
+The complete cloud architecture is a target design. Each component must be verified independently before being described as operational.
+
+## 3. Deployment and Environment Boundaries
+
+### 3.1 Local Development
+
+The repository supports local execution using:
+
+`uvicorn app.main:app --reload`
+
+The current application defaults to:
+
+`LEDGERLOCK_API_MODE=mock`
+
+The current `app/main.py` provides the dashboard and `/api/health` endpoint. Mock mode is a browser-side synthetic preview and is not proof of backend ledger verification or cloud integration.
+
+The `live` setting must only be used when the corresponding backend API implementation is available and verified.
+
+### 3.2 Floci Verification
+
+Floci is identified in the project integration context as a verification environment or process.
+
+Its exact deployment model, execution mechanism and relationship to the active Render deployment have not yet been confirmed.
+
+Therefore:
+
+- Floci verification results must be associated with the exact source revision tested.
+- Verification evidence must identify the test command, result and environment where available.
+- Floci must not automatically be described as the production deployment.
+- A successful verification result must not be interpreted as proof of untested cloud integrations.
+
+The Floci workflow requires confirmation from the project integration owner.
+
+### 3.3 Active Render Deployment
+
+Render is identified by the project team as the active application deployment.
+
+The deployment must be assessed independently from local development and Floci verification.
+
+Deployment evidence should establish:
+
+- The deployed repository revision.
+- The configured API mode.
+- The available application routes.
+- The health endpoint response.
+- Whether the deployment uses mock or live backend behaviour.
+- Whether any external storage or signing integrations are actually connected.
+
+The existence of an active Render deployment does not establish that Firestore, Cloud KMS or Cloud Logging is operational.
+
+## 4. Audit Event Submission
 
 A user submits an audit event through the frontend.
 
-The event contains the following fields:
+The intended event fields are:
 
 - event_type
 - actor_id
@@ -35,20 +87,21 @@ The event contains the following fields:
 
 Only synthetic identities and test data should be used during demonstrations and testing.
 
-The frontend sends the request to the backend API using HTTP.
+The browser must communicate with the backend API. It must never access Firestore or Cloud KMS directly.
 
-## 4. Backend Validation
+## 5. Backend Validation
 
 The backend receives the event and validates the submitted fields.
 
-It checks that:
+It should check that:
 
 - Required fields are present.
 - Field values follow the expected format.
 - Input lengths and types are within allowed limits.
 - Invalid or unexpected input is rejected safely.
+- The requester is authorized to perform the requested operation.
 
-The server is responsible for assigning authoritative metadata, including:
+The server must assign authoritative metadata, including:
 
 - Record ID
 - Timestamp
@@ -58,7 +111,7 @@ The server is responsible for assigning authoritative metadata, including:
 
 The browser must not be trusted to generate authoritative ledger metadata.
 
-## 5. Canonical Record Creation
+## 6. Canonical Record Creation
 
 After validation, the backend converts the event into a deterministic representation.
 
@@ -74,7 +127,7 @@ The implementation must define:
 
 The exact canonicalization rules must be agreed upon by the backend team.
 
-## 6. Hash Generation and Chaining
+## 7. Hash Generation and Chaining
 
 The backend calculates a SHA-256 hash for each canonical record.
 
@@ -86,9 +139,11 @@ Current Hash = SHA-256(Canonical Record Data Including Previous Hash)
 
 The first record uses a defined initial previous-hash value.
 
-This creates a chain in which changing an earlier record causes subsequent hash relationships to fail verification.
+Changing a record can cause subsequent hash relationships to fail verification.
 
-## 7. Record Storage
+Hash chaining alone does not prevent an attacker with sufficient storage access from rewriting an entire chain and recalculating its hashes.
+
+## 8. Record Storage
 
 The generated record is passed to the configured storage adapter.
 
@@ -100,7 +155,9 @@ Records must be retrieved in ascending sequence order.
 
 Storage access must be controlled by backend authorization and appropriate cloud permissions.
 
-## 8. Trusted Checkpoint
+Firestore integration must remain labelled planned or unverified until implementation and supporting evidence are reviewed.
+
+## 9. Trusted Checkpoint
 
 A checkpoint records a trusted state of the ledger.
 
@@ -111,15 +168,17 @@ It should include sufficient information to identify the checkpointed chain stat
 - Checkpoint metadata
 - Signing key version or identifier
 
-The exact checkpoint format must be agreed upon by the backend and cloud teams.
-
 The intended cloud implementation uses Google Cloud KMS for signing operations.
+
+Checkpoint creation must require authorization.
 
 Private signing keys must never be exposed to the browser or committed to the repository.
 
-## 9. Verification Process
+KMS signing and public-key retrieval permissions must be restricted to the required operations.
 
-The verification component checks:
+## 10. Verification Process
+
+The verification component should check:
 
 1. Record sequence integrity.
 2. Previous-hash relationships.
@@ -127,11 +186,11 @@ The verification component checks:
 4. The latest chain state against the trusted checkpoint.
 5. Checkpoint signature validity.
 
-A modified, deleted or reordered record should cause verification to report an integrity failure when that change affects the verified chain or checkpointed state.
+A modified, deleted or reordered record should cause verification to report an integrity failure when the change affects the verified chain or checkpointed state.
 
 The verification process must not claim to prove that an event was truthful when it was originally created.
 
-## 10. Verification Result
+## 11. Verification Result
 
 The backend returns a verification result to the frontend.
 
@@ -145,36 +204,54 @@ The result should communicate:
 
 Sensitive data, private keys, credentials and internal stack traces must not be exposed.
 
-## 11. Trust Boundaries
+## 12. Trust Boundaries
 
-The main trust boundaries are:
-
-### 11.1 Frontend to Backend
+### 12.1 Browser to Backend
 
 All browser input is untrusted and must be validated by the backend.
 
-### 11.2 Backend to Storage
+The browser must not access Firestore or Cloud KMS directly.
+
+### 12.2 Backend to Storage
 
 Only authorized backend operations should access ledger storage.
 
-### 11.3 Backend to Signing Service
+### 12.3 Backend to Signing Service
 
 Signing operations must be restricted to authorized backend identities.
 
-### 11.4 Backend to Logging
+### 12.4 Backend to Logging
 
-Logs must avoid credentials, private keys, tokens and unnecessary sensitive information.
+Logs must use allowlisted and sanitized fields. Credentials, private keys, tokens and unnecessary complete event payloads must not be logged.
 
-## 12. Implementation Status and Limitations
+### 12.5 Deployment Boundaries
+
+Local development, Floci verification and Render deployment must be treated as separate environments or processes.
+
+Evidence from one environment must not automatically be used to claim functionality in another.
+
+## 13. Implementation Status and Limitations
 
 The repository currently provides a frontend foundation with an explicitly labelled mock mode.
 
-Mock mode is intended for reviewing frontend behaviour and is not evidence of cryptographic verification or cloud integration.
+The current `app/main.py` provides:
 
-The actual implementation of record hashing, persistent storage, checkpoint signing and verification must be confirmed through source-code review, integration tests and recorded evidence.
+- The dashboard route.
+- The `/api/health` endpoint.
+- Configuration validation for mock and live API modes.
 
-## 13. Conclusion
+The API contract describes additional intended routes, but their presence in the contract does not establish that they are implemented.
+
+Persistent cloud storage, signed checkpoint creation, KMS integration and cloud verification require separate implementation and evidence.
+
+Render is identified as the active deployment by the project team. Its actual API mode and cloud connectivity require deployment verification.
+
+Floci is identified as a verification environment or process, but its exact workflow requires confirmation.
+
+## 14. Conclusion
 
 LedgerLock is designed to provide tamper evidence for stored audit records by combining deterministic record creation, SHA-256 hash chaining and independently protected signed checkpoints.
 
 Its security depends on correct implementation, access control, key protection, checkpoint management and verification.
+
+Deployment and verification claims must always match the evidence collected for the corresponding environment.
