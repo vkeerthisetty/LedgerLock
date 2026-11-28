@@ -28,9 +28,9 @@
 ### F-003 - Checkpoint signing authority requires protection
 
 - Severity: High
-- Status: Mitigated locally; live KMS open
-- Control: Administrator-token requirement, minimum local secret length and protected error responses.
-- Remaining risk: the active API still uses a process-held HMAC secret. The KMS adapter is verified only in local Floci-GCP and is not wired into checkpoint creation.
+- Status: Mitigated in local and Floci cloud modes; live GCP KMS and IAM enforcement open
+- Control: Administrator-token requirement, minimum local secret length, protected error responses, and asymmetric `EC_SIGN_P256_SHA256` Cloud KMS signing (`signing/kms_adapter.py`) wired into FastAPI cloud mode (`USE_CLOUD_SERVICES=true`).
+- Remaining risk: Public Render and default local mode (`USE_CLOUD_SERVICES=false`) still use a process-held HMAC secret; KMS signing and public-key verification are verified in local Floci-GCP (`evidence/floci/integration-output.txt`), while live GCP KMS and IAM policy enforcement remain untested.
 
 ### F-004 - Record modification, removal or reordering
 

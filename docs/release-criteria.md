@@ -29,7 +29,7 @@
 - [x] Floci-GCP and required Firestore, KMS and Logging service availability are verified.
 - [x] FastAPI cloud mode persists records and KMS checkpoints across an API restart.
 - [ ] Firestore persistence and concurrency behavior are verified.
-- [ ] Least-privilege runtime identity is verified.
+- [ ] Least-privilege runtime identity is verified (script/IAM config documented in `evidence/IAM-01/iam-cloudrun-verification.txt`; runtime IAM enforcement cannot be proven in credential-free Floci and remains unchecked pending an authorised GCP project).
 - [x] Floci Cloud Logging delivery and redaction are verified.
 - [ ] Logging access control and retention are verified.
 - [ ] Cloud Run is verified if required by the assigned environment.

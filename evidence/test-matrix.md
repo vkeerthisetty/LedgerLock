@@ -16,6 +16,7 @@
 | T06 | Controlled unexpected error is safe and logged | PASS | `evidence/T06/verification-output.txt` | Local handler/log only |
 | T07 | Source, output and local logs contain no observed secrets | PASS WITH LIMITATIONS | `evidence/T07/repository-scan.txt`; `evidence/floci/integration-output.txt` | Floci Logging write/read verified; real GCP retention and access not inspected |
 | T08 | Complete implemented test set is reproducible | PASS FOR IMPLEMENTED SCOPE | `evidence/T08/regression-output.txt`; `evidence/floci/integration-output.txt` | Cloud Run runtime, IAM enforcement and real GCP excluded |
+| IAM-01 | Least-privilege IAM & Cloud Run deployment configuration | CONFIGURED / UNVERIFIED LIVE | `evidence/IAM-01/iam-cloudrun-verification.txt`; `infra/deploy_cloud_run.sh` | Static script/config verified only; runtime IAM enforcement requires authorised GCP project |
 
 ## Interpretation
 

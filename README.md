@@ -59,15 +59,15 @@ Prerequisites: Docker Desktop running, the repository `.venv` created, and
 
 The script starts the isolated emulator on `localhost:4588`, creates a local
 EC P-256 signing key, and verifies a synthetic Firestore write/read, Cloud KMS
-sign/verify round trip, and redacted Cloud Logging write/read. The opt-in test is
-skipped during ordinary unit/CI runs so it cannot accidentally contact a real
-cloud service. Stop the emulator without deleting its local volume using:
+sign/verify round trip, and redacted Cloud Logging write/read. The same script
+also starts FastAPI in cloud mode, creates and checkpoints synthetic records,
+restarts the API, verifies Firestore persistence and the KMS checkpoint, and
+confirms that appending a later record makes the old checkpoint stale. The opt-in
+test is skipped during ordinary unit/CI runs so it cannot accidentally contact a
+real cloud service. The public Render deployment keeps cloud services disabled
+and remains an in-memory demonstration.
 
-The same script also starts FastAPI in cloud mode, creates and checkpoints
-synthetic records, restarts the API, verifies Firestore persistence and the KMS
-checkpoint, and confirms that appending a later record makes the old checkpoint
-stale. The public Render deployment keeps cloud services disabled and remains
-an in-memory demonstration.
+Stop the emulator without deleting its local volume using:
 
 ```powershell
 docker compose -f docker-compose.floci.yml down
