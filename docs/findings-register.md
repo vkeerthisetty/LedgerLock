@@ -30,7 +30,7 @@
 - Severity: High
 - Status: Mitigated locally; live KMS open
 - Control: Administrator-token requirement, minimum local secret length and protected error responses.
-- Remaining risk: HMAC secret is process-held; Cloud KMS is unverified.
+- Remaining risk: the active API still uses a process-held HMAC secret. The KMS adapter is verified only in local Floci-GCP and is not wired into checkpoint creation.
 
 ### F-004 - Record modification, removal or reordering
 

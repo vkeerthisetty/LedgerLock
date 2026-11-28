@@ -11,15 +11,20 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from signing.kms_adapter import CheckpointSignerAdapter
 
 from app.api import router
-from app.ledger_core import AuditLedger
+from app.local_storage import LocalLedgerStorage
 from app.security_logging import log_security_event
+from storage.firestore_adapter import LedgerStorageAdapter
 
 
 BASE_DIR = Path(__file__).resolve().parent
 API_MODE = os.getenv("LEDGERLOCK_API_MODE", "mock").strip().lower()
 APP_ENV = os.getenv("LEDGERLOCK_ENV", "development").strip().lower()
+USE_CLOUD_SERVICES = (
+    os.getenv("USE_CLOUD_SERVICES", "false").strip().lower() == "true"
+)
 
 if API_MODE not in {"mock", "live"}:
     raise RuntimeError(
@@ -32,9 +37,20 @@ app = FastAPI(
     version="0.1.0",
 )
 
-# One shared disposable ledger and checkpoint for the application process.
-app.state.ledger = AuditLedger()
-app.state.checkpoint = None
+# Local mode preserves the existing in-memory ledger.
+# Cloud mode uses the Firestore adapter.
+if USE_CLOUD_SERVICES:
+    app.state.storage = LedgerStorageAdapter(use_cloud=True)
+    app.state.ledger = None
+else:
+    app.state.storage = LocalLedgerStorage()
+    # Keep this alias for existing tests and compatibility.
+    app.state.ledger = app.state.storage.ledger
+
+app.state.checkpoint = app.state.storage.get_checkpoint()
+app.state.signer = CheckpointSignerAdapter(
+    use_cloud=USE_CLOUD_SERVICES
+)
 app.include_router(router)
 
 app.mount(
@@ -144,6 +160,7 @@ async def dashboard(request: Request) -> HTMLResponse:
     )
 
 
+
 @app.get("/api/health")
 async def health() -> dict[str, str]:
     """Return a non-sensitive health response."""
@@ -152,4 +169,6 @@ async def health() -> dict[str, str]:
         "status": "ok",
         "service": "ledgerlock-api",
         "environment": APP_ENV,
+        "storage_mode": app.state.storage.mode,
+        "signing_mode": app.state.signer.mode,
     }

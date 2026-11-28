@@ -38,6 +38,8 @@ class AppTests(unittest.TestCase):
                 "status": "ok",
                 "service": "ledgerlock-api",
                 "environment": "development",
+                "storage_mode": "LOCAL_SIMULATION",
+                "signing_mode": "LOCAL_SIMULATION",
             },
             response.json(),
         )
