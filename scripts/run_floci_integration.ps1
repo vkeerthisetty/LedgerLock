@@ -59,7 +59,7 @@ try {
     }
 
     & $python infra\bootstrap_floci.py
-    & $python -m pytest tests\test_floci_integration.py -v
+    & $python -m pytest tests\test_floci_integration.py -v -p no:cacheprovider
     if ($LASTEXITCODE -ne 0) {
         throw "Floci integration test failed with exit code $LASTEXITCODE."
     }

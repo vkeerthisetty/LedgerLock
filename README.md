@@ -73,6 +73,16 @@ Delete the disposable emulator state only when a clean lab reset is intended:
 docker compose -f docker-compose.floci.yml down -v
 ```
 
+Before a review or demonstration, run all local checks with:
+
+```powershell
+.\scripts\review_preflight.ps1 -IncludeFloci
+```
+
+GitHub Actions runs the ordinary regression checks and the isolated Floci
+integration as separate jobs. Neither job uses cloud credentials or a billing
+account.
+
 ## Tests
 
 Run the repository checks with:

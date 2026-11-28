@@ -49,3 +49,82 @@ jobs:
             echo "$forbidden"
             exit 1
           fi
+
+  floci-integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
+
+      - name: Start Floci-GCP
+        run: docker compose -f docker-compose.floci.yml up -d
+
+      - name: Wait for required services
+        shell: bash
+        run: |
+          set -euo pipefail
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://localhost:4588/_floci-gcp/health > /tmp/floci-health.json; then
+              python - <<'PY'
+          import json
+          from pathlib import Path
+
+          health = json.loads(Path("/tmp/floci-health.json").read_text())
+          required = ("firestore", "kms", "logging")
+          failed = [name for name in required if health["services"].get(name) != "running"]
+          if failed:
+              raise SystemExit(f"Required Floci services are not running: {failed}")
+          print("Required Floci services are running:", ", ".join(required))
+          PY
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Floci-GCP did not become ready in time."
+          docker compose -f docker-compose.floci.yml logs floci-gcp
+          exit 1
+
+      - name: Bootstrap local KMS resources
+        env:
+          GCP_PROJECT_ID: floci-local
+          GCP_REGION: us-central1
+          FLOCI_GCP_ENDPOINT: http://localhost:4588
+          KMS_KEY_RING: ledgerlock-keyring
+          KMS_KEY_NAME: checkpoint-signer
+        run: python infra/bootstrap_floci.py
+
+      - name: Verify Firestore, KMS and Logging
+        env:
+          RUN_FLOCI_INTEGRATION: "true"
+          USE_CLOUD_SERVICES: "true"
+          GCP_PROJECT_ID: floci-local
+          GOOGLE_CLOUD_PROJECT: floci-local
+          GCP_REGION: us-central1
+          FLOCI_GCP_ENDPOINT: http://localhost:4588
+          FIRESTORE_EMULATOR_HOST: localhost:4588
+          FIRESTORE_COLLECTION: audit_ledger_floci_ci
+          KMS_KEY_RING: ledgerlock-keyring
+          KMS_KEY_NAME: checkpoint-signer
+          KMS_KEY_VERSION: "1"
+          CLOUD_LOG_NAME: ledgerlock-audit-events
+        run: python -m pytest tests/test_floci_integration.py -v -p no:cacheprovider
+
+      - name: Show Floci logs after failure
+        if: failure()
+        run: docker compose -f docker-compose.floci.yml logs floci-gcp
+
+      - name: Stop Floci-GCP
+        if: always()
+        run: docker compose -f docker-compose.floci.yml down -v
