@@ -56,6 +56,10 @@ python -m compileall app tests
 
 CI runs these checks for pushes and pull requests. The committed tests cover the frontend foundation, API validation and the rubric's T01-T03 hash-chain cases. Cloud and signing owners must add their own integration tests without weakening the existing checks.
 
+## Deployment
+
+`render.yaml` defines a Render web service for the verified local API mode. It runs the FastAPI application, checks `/api/health`, generates the local checkpoint secrets in the hosting environment, and keeps cloud services disabled. The deployed in-memory ledger is disposable and may reset whenever the service restarts; it is not Firestore, Cloud KMS, Cloud Run, or Floci evidence.
+
 ## Safety rules
 
 - Use synthetic actors, resources, and events only.

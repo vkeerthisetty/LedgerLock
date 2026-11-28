@@ -1,0 +1,8 @@
+Test ID: T04
+Phase: After-Fix
+Environment: Windows Local Workstation (Python 3 / Local Simulation Adapter)
+Date: 2026-11-28
+T04 Private Key Inspection Result: PASS
+Signature Verification Status: Verification PASSED under LOCAL_SIMULATION
+Records Inspected: 1 | Forbidden Markers Found: 0
+Stored Key Reference (Public/Non-Secret Only): local-sim://hmac-sha256-ephemeral
