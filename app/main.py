@@ -160,6 +160,7 @@ async def dashboard(request: Request) -> HTMLResponse:
     )
 
 
+
 @app.get("/api/health")
 async def health() -> dict[str, str]:
     """Return a non-sensitive health response."""
@@ -168,4 +169,6 @@ async def health() -> dict[str, str]:
         "status": "ok",
         "service": "ledgerlock-api",
         "environment": APP_ENV,
+        "storage_mode": app.state.storage.mode,
+        "signing_mode": app.state.signer.mode,
     }
