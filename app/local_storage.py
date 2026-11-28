@@ -14,6 +14,7 @@ class LocalLedgerStorage:
 
     def __init__(self) -> None:
         self.ledger = AuditLedger()
+        self.mode = "LOCAL_SIMULATION"
 
         self.checkpoint_path = Path(
             os.getenv(
