@@ -1,103 +1,81 @@
+# LedgerLock Security Findings Register
 
-# LedgerLock – Security Findings Register
+## Severity guidance
 
-## 1. Purpose
-
-This register records security findings identified during LedgerLock development, testing and review.
-
-Each finding should include its description, severity, evidence, impact, recommended remediation and current status.
-
-## 2. Severity Definitions
-
-| Severity | Meaning |
+| Severity | Meaning in this scenario |
 |---|---|
-| Critical | Severe compromise of system security |
-| High | Major security weakness with significant impact |
-| Medium | Meaningful weakness requiring remediation |
-| Low | Limited security impact |
-| Informational | Observation or improvement recommendation |
+| High | Could permit undetected history changes, unauthorized signing or loss of audit history |
+| Medium | Materially weakens a control or exposes unnecessary information |
+| Low | Limited weakness with small demonstrated impact |
+| Informational | Observation or hardening recommendation without demonstrated vulnerability |
 
-## 3. Findings
+## Findings
 
-### F-001 – Mock Mode Must Not Be Mistaken for Live Verification
+### F-001 - Mock behavior could be mistaken for live verification
 
-- Category: Security communication
 - Severity: Informational
-- Status: Design consideration
-- Description: The frontend foundation starts in explicitly labelled mock mode. Users may incorrectly interpret mock behaviour as evidence of working cryptographic verification or cloud integration.
-- Impact: Incorrect security claims and misleading demonstration results.
-- Recommendation: Clearly label mock mode and identify which components are implemented, simulated or untested.
-- Evidence: Repository README and frontend acceptance documentation.
-- Owner: Frontend / Project Coordinator
-- Retest required: Yes
+- Status: Closed for current UI
+- Control: Visible mode badges, warnings and documented limitations.
+- Evidence: Frontend foundation tests and deployed UI review.
 
-### F-002 – Backend Input Validation
+### F-002 - Malformed input could create invalid records
 
-- Category: Input validation
-- Severity: To be assessed
-- Status: Pending implementation review
-- Description: All browser-submitted event data must be validated by the backend.
-- Impact: Malformed or unauthorized input may create invalid or misleading records.
-- Recommendation: Enforce server-side validation, field restrictions and authorization.
-- Evidence: Backend source review and invalid-input tests.
-- Owner: Backend Engineer
-- Retest required: Yes
+- Severity: Medium
+- Status: Closed for implemented schema
+- Control: Server-side enumerations, length limits, whitespace handling and rejection of extra fields.
+- Evidence: `tests/test_api.py`.
 
-### F-003 – Checkpoint Signing Key Protection
+### F-003 - Checkpoint signing authority requires protection
 
-- Category: Key management
-- Severity: To be assessed
-- Status: Pending cloud integration review
-- Description: The private signing key used for checkpoint signatures must not be exposed to unauthorized users or frontend code.
-- Impact: Unauthorized checkpoint signatures could undermine trust in verification.
-- Recommendation: Use protected key-management services and least-privilege permissions.
-- Evidence: Cloud configuration review and key exposure tests.
-- Owner: Cloud Security Engineer
-- Retest required: Yes
+- Severity: High
+- Status: Mitigated locally; live KMS open
+- Control: Administrator-token requirement, minimum local secret length and protected error responses.
+- Remaining risk: HMAC secret is process-held; Cloud KMS is unverified.
 
-### F-004 – Audit Chain Integrity Verification
+### F-004 - Record modification, removal or reordering
 
-- Category: Data integrity
-- Severity: To be assessed
-- Status: Pending verification testing
-- Description: The system must detect unauthorized record modification, deletion and reordering within the protected verification scope.
-- Impact: Undetected changes may undermine audit reliability.
-- Recommendation: Verify record hashes, sequence numbers, previous-hash relationships and trusted checkpoints.
-- Evidence: T01, T02 and T03 test results.
-- Owner: Backend Engineer / Security Architect
-- Retest required: Yes
+- Severity: High
+- Status: Closed for complete available local chain
+- Control: Canonical hashing, sequences, previous-hash links and verification.
+- Evidence: T01-T03.
 
-### F-005 – Sensitive Information in Logs and Errors
+### F-005 - Sensitive information in errors or logs
 
-- Category: Information disclosure
-- Severity: To be assessed
-- Status: Pending review
-- Description: API responses and security logs must not expose private keys, credentials, tokens, internal paths or stack traces.
-- Impact: Information disclosure may help attackers compromise the system.
-- Recommendation: Use safe error responses and redact sensitive log fields.
-- Evidence: T06 and T07 test results.
-- Owner: Application Security Engineer
-- Retest required: Yes
+- Severity: Medium
+- Status: Closed for tested local scope
+- Control: Safe exception handlers, allowlisted fields, restricted values and redaction tests.
+- Remaining risk: Live Cloud Logging has not been inspected.
 
-## 4. Findings Status Definitions
+### F-006 - Active ledger is not durable
 
-- Open: Finding requires investigation or remediation.
-- In Progress: Remediation is underway.
-- Resolved: A fix has been implemented.
-- Retest Required: Fix requires verification.
-- Closed: Evidence confirms the issue is addressed.
-- Not Applicable: Finding does not apply, with documented justification.
+- Severity: High
+- Status: Open
+- Impact: Render restart or redeployment can remove audit history and checkpoint state.
+- Recommendation: Integrate and verify Firestore with concurrency-safe sequence allocation.
 
-## 5. Review Notes
+### F-007 - Event creation lacks user authentication
 
-This register contains design risks and items requiring validation. Entries marked as pending or to be assessed are not confirmed vulnerabilities.
+- Severity: High
+- Status: Open design limitation
+- Impact: Any caller able to reach the demonstration API can create a valid synthetic event.
+- Existing boundary: Checkpoint creation is protected; demonstration data must remain synthetic.
+- Recommendation: Define authenticated roles before any non-demonstration use.
 
-Update this document when actual testing produces new evidence.
+### F-008 - Cloud simulation could be overstated
 
-## 6. Final Review
+- Severity: Medium
+- Status: Controlled by documentation; operational verification pending
+- Control: Adapter mode labels, disabled-cloud default and explicit report limitations.
+- Recommendation: Convert service claims to verified only after Floci/live evidence exists.
 
-Reviewed by:
-Review date:
-Project revision:
-Outstanding findings:
-Release recommendation:
+## Review summary
+
+Reviewed by: Keerthi, Project Coordinator
+
+Review date: 28 November 2026
+
+Controlled demonstration decision: Approved with conditions
+
+Complete cloud decision: Not approved
+
+Outstanding findings: F-003 live KMS scope, F-005 live logging scope, F-006, F-007 and F-008 operational verification.

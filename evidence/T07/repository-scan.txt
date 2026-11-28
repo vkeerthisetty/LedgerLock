@@ -1,0 +1,20 @@
+LEDGERLOCK - T07 SENSITIVE-DATA INSPECTION
+
+Evidence date: 28 November 2026
+Tested source baseline: 9b195ed plus report-branch safety updates
+
+Commands:
+python scripts/check_repository_safety.py
+python -m pytest -q tests/test_cloud_adapters.py tests/test_security_logging.py
+
+Observed result:
+- Repository safety scan passed after synthetic private-key test markers were split so no literal key header is tracked.
+- Logging tests rejected unapproved fields and sensitive-looking values.
+- No forbidden credential file or high-confidence secret marker was reported.
+
+Status: PASS WITH LIMITATIONS
+
+Limitations:
+- The scanner is intentionally narrow and is not a general-purpose secret scanner.
+- Local sanitized logs were inspected; live Cloud Logging was not.
+- The scan must be repeated after every integration.

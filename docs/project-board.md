@@ -1,38 +1,29 @@
-# Project Board Plan
+# Project Board Status
 
-Create one GitHub Project linked to this repository.
+## Workflow
 
-## Columns
+Backlog → Ready → In progress → Review → Integration testing → Done
 
-1. Backlog
-2. Ready
-3. In progress
-4. Review
-5. Integration testing
-6. Done
+An item is Done only when its code, tests, documentation, evidence and review are complete.
 
-## Required issue fields
+## Current status - 28 November 2026
 
-- Owner
-- Reviewer
-- Project phase
-- Required output
-- Acceptance criteria
-- Test ID, when applicable
-- Evidence filename
-- Dependency or blocker
-- Target date
-
-## Initial issues
-
-| Issue | Primary owner | Reviewer | Completion evidence |
+| Work item | Owner | State | Next action |
 |---|---|---|---|
-| Architecture, data flow, and threat model | Jyoshitha | Keerthi | Diagram and threat table |
-| Canonical record and API implementation | Syed | Jyoshitha and Keerthi | Unit tests and API examples |
-| Firestore, KMS, Logging, and Cloud Run adapters | Jaanvi | Syed | Service verification record |
-| Access, safe errors, and redacted logging | Omar | Jaanvi | Permission matrix and T06–T07 evidence |
-| Frontend foundation and integration | Keerthi | Syed and Omar | Acceptance checklist and screenshots |
-| T01–T08 evidence index | Keerthi | All test owners | Completed test matrix |
-| Assessment report and demonstration | Keerthi | Entire team | Final checklist and rehearsal result |
+| Architecture, data flow and threat model | Jyoshitha | Review | Update after live cloud integration |
+| Hash chain, API and local checkpoint | Syed | Done for local scope | Connect verified cloud interfaces later |
+| Floci and live cloud services | Jaanvi | In progress | Verify workspace, services, IAM and operations |
+| Safe errors, logging and data handling | Omar | Done for local scope | Review live IAM/logging later |
+| Frontend, Render deployment and integration | Keerthi | Done for current scope | Retest after remaining merges |
+| T01-T08 local evidence | Keerthi and owners | Done for implemented scope | Repeat after cloud integration |
+| Assessment report and demo | Keerthi and team | Review | Timed rehearsal and cloud revision pending |
 
-An issue moves to Done only when its acceptance criteria, review, tests, documentation, and evidence are complete.
+## Remaining acceptance gates
+
+- Floci workspace and supported-service inventory.
+- Firestore durable storage and concurrency test.
+- Cloud KMS asymmetric sign/verify test.
+- Least-privilege IAM and live logging test.
+- FastAPI cloud-mode integration.
+- Full regression on the final cloud revision.
+- Final five-member demonstration rehearsal.

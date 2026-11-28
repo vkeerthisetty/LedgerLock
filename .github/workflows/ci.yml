@@ -36,6 +36,9 @@ jobs:
       - name: Run complete pytest suite
         run: python -m pytest -q
 
+      - name: Scan tracked files for credential material
+        run: python scripts/check_repository_safety.py
+
       - name: Reject forbidden committed files
         shell: bash
         run: |

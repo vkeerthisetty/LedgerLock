@@ -1,0 +1,19 @@
+LEDGERLOCK - T01 UNTOUCHED CHAIN VERIFICATION
+
+Evidence date: 28 November 2026
+Tested source baseline: 9b195ed
+Method: Automated unittest using synthetic records
+
+Command:
+python -m unittest tests.test_ledger_core.AuditLedgerTests.test_t01_untouched_chain_verifies -v
+
+Expected result:
+The complete available chain verifies with valid=true.
+
+Observed result:
+test_t01_untouched_chain_verifies ... ok
+
+Status: PASS
+
+Limitation:
+The test covers the in-memory ledger. Firestore persistence is not verified.

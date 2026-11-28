@@ -1,111 +1,88 @@
+# LedgerLock Release Criteria
 
-# LedgerLock – Release Criteria
+## Functional requirements
 
-## 1. Purpose
+- [x] Frontend loads without unexpected errors.
+- [x] Mock and live modes are visibly distinguished.
+- [x] Synthetic audit events can be submitted and validated.
+- [x] Backend assigns authoritative IDs, timestamps, sequences and hashes.
+- [x] Records can be retrieved in sequence order.
+- [x] Verification checks the complete available chain.
+- [x] Invalid input produces controlled responses.
+- [ ] Active records survive Render or application restart.
 
-This document defines the security, functional, integration and documentation conditions that must be satisfied before LedgerLock is recommended for release.
+## Cryptographic requirements
 
-A successful frontend demonstration alone does not establish that the complete ledger and cloud security implementation is operational.
+- [x] Canonical hashing behavior is implemented and tested.
+- [x] SHA-256 links and sequence integrity are verified.
+- [x] Local HMAC-SHA256 checkpoint format is documented.
+- [x] Local checkpoint creation requires administrator authorization.
+- [x] Local checkpoint verification is tested.
+- [x] Signing secrets are absent from frontend and repository content.
+- [ ] Cloud KMS asymmetric signing and public-key verification are observed.
 
-## 2. Functional Requirements
+## Cloud and infrastructure requirements
 
-- [ ] Frontend loads without unexpected errors.
-- [ ] Mock mode is visibly labelled.
-- [ ] Synthetic audit events can be submitted.
-- [ ] Backend validates submitted data.
-- [ ] Backend assigns authoritative record metadata.
-- [ ] Records are stored using the configured storage adapter.
-- [ ] Ledger records can be retrieved in sequence order.
-- [ ] Verification checks the complete available chain.
-- [ ] Verification results are displayed safely.
-- [ ] Invalid input produces controlled error responses.
+- [x] Cloud/local adapters default safely to local simulation.
+- [x] Render deployment is live and health-checked.
+- [x] Cloud claims are labelled verified, simulated or untested.
+- [ ] Floci workspace and service availability are verified.
+- [ ] Firestore persistence and concurrency behavior are verified.
+- [ ] Least-privilege runtime identity is verified.
+- [ ] Cloud Logging delivery, redaction and access are verified.
+- [ ] Cloud Run is verified if required by the assigned environment.
 
-## 3. Cryptographic Requirements
+## Security requirements
 
-- [ ] Canonical record format is documented.
-- [ ] SHA-256 hashing is implemented and tested.
-- [ ] Previous-hash relationships are verified.
-- [ ] Sequence integrity is checked.
-- [ ] Trusted checkpoint format is documented.
-- [ ] Checkpoint signing is implemented where required.
-- [ ] Checkpoint signature verification is tested.
-- [ ] Private signing keys are not exposed to the frontend or repository.
+- [x] Server-side input validation is tested.
+- [x] Checkpoint creation rejects missing or incorrect authorization.
+- [x] Safe HTTP, validation and unexpected-error handling is implemented.
+- [x] Local logs filter fields and sensitive-looking values.
+- [x] Browser code contains no credentials or signing material.
+- [x] Evidence uses synthetic data.
+- [ ] A complete end-user authentication model is implemented.
 
-## 4. Cloud Security Requirements
+## Evidence requirements
 
-- [ ] Firestore integration is verified, if included in the release.
-- [ ] Cloud KMS integration is verified, if included in the release.
-- [ ] Service identities use least-privilege permissions.
-- [ ] Credentials are not committed to the repository.
-- [ ] Storage and signing permissions are reviewed.
-- [ ] Cloud operations are labelled accurately as verified, simulated or untested.
+- [x] T01 untouched chain.
+- [x] T02 modified record.
+- [x] T03 missing/reordered record.
+- [x] T04 private-key material inspection.
+- [x] T05 tamper-evidence claim boundary.
+- [x] T06 controlled unexpected error.
+- [x] T07 sensitive-data inspection for local scope.
+- [x] T08 complete implemented regression.
+- [ ] T01-T08 repeated after live cloud integration.
 
-## 5. Security Requirements
+## Documentation requirements
 
-- [ ] Backend input validation is reviewed.
-- [ ] Unauthorized operations are restricted.
-- [ ] Safe error handling is implemented.
-- [ ] Logs do not expose secrets or unnecessary sensitive data.
-- [ ] Browser code contains no private keys or service credentials.
-- [ ] Only synthetic test data is used in evidence.
-- [ ] Security findings are reviewed and documented.
+- [x] Architecture and data-flow documents exist.
+- [x] Threat model and permission matrix exist.
+- [x] API contract matches the implemented local API.
+- [x] Findings register and integration checklist are current.
+- [x] Security Assessment Report and evidence index exist.
+- [x] README records setup and limitations.
+- [x] Demonstration plan matches current behavior.
 
-## 6. Test Evidence Requirements
+## Demonstration requirements
 
-- [ ] T01 – Untouched chain verifies successfully.
-- [ ] T02 – Modified stored event is detected.
-- [ ] T03 – Removed or reordered event causes integrity verification failure.
-- [ ] T04 – Stored records are checked for private-key material.
-- [ ] T05 – Tamper evidence is distinguished from immutability.
-- [ ] T06 – Unexpected errors are handled safely.
-- [ ] T07 – Secrets and unnecessary sensitive data are checked.
-- [ ] T08 – Full test suite can be repeated from a clean setup.
+- [x] Public Render workflow was smoke-tested with synthetic data.
+- [x] Successful chain verification was observed.
+- [x] Controlled tampering is covered by repeatable tests.
+- [x] Local checkpoint and unauthorized request cases are tested.
+- [x] Claims distinguish local simulation from cloud verification.
+- [ ] All five members complete a timed final rehearsal.
 
-Each test must have recorded evidence and an accurate result.
+## Release decision
 
-Tests that have not been run must remain marked as pending.
+**Controlled local/Render demonstration: approved with conditions.**
 
-## 7. Documentation Requirements
+Conditions: use synthetic data, state that active records are disposable, label HMAC as local, and do not claim Firestore, Cloud KMS, Cloud Run, Cloud Logging or Floci verification.
 
-- [ ] Architecture diagram is available.
-- [ ] Data-flow document is complete.
-- [ ] Threat model is reviewed.
-- [ ] Findings register is updated.
-- [ ] API contract reflects the implemented interface.
-- [ ] Integration checklist is updated.
-- [ ] Evidence index is available.
-- [ ] README describes setup and limitations accurately.
+**Complete cloud release: not approved.**
 
-## 8. Demonstration Requirements
+Reviewer: Keerthi, Project Coordinator
 
-- [ ] Demonstration uses synthetic data.
-- [ ] Mock and live modes are clearly distinguished.
-- [ ] Successful verification is demonstrated.
-- [ ] A controlled tampering scenario is demonstrated where implemented.
-- [ ] Verification failure is explained.
-- [ ] No credentials, private keys or sensitive information appear in screenshots.
-- [ ] Demonstration claims match actual implementation evidence.
+Review date: 28 November 2026
 
-## 9. Release Decision
-
-The project should not be described as fully integrated or cryptographically verified until the relevant implementation and tests have been completed.
-
-Release recommendation:
-
-- Approved
-- Approved with documented limitations
-- Not approved
-
-Outstanding issues:
-
-Reviewer:
-
-Review date:
-
-Project revision:
-
-## 10. Final Principle
-
-A feature is considered verified only when its implementation has been reviewed and supporting test evidence is available.
-
-A mock demonstration, planned feature or untested integration must not be represented as a verified security capability.
+Tested source baseline: `9b195ed`

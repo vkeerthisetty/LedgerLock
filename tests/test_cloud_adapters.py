@@ -39,7 +39,8 @@ def test_local_storage_persists_ordered_by_sequence_and_blocks_private_keys(tmp_
     assert [r["sequence"] for r in chain] == [1, 2]
 
     with pytest.raises(ValueError, match="SECURITY_BLOCK"):
-        storage.save_record({"sequence": 3, "leak": "-----BEGIN PRIVATE KEY-----abc"})
+        private_key_fixture = "-----BEGIN " + "PRIVATE KEY-----abc"
+        storage.save_record({"sequence": 3, "leak": private_key_fixture})
 
 
 def test_signing_verification_and_invalid_signature_rejection():
@@ -71,7 +72,7 @@ def test_safe_logging_filters_fields_and_redacts_sensitive_values(tmp_path):
         "outcome": "FAIL",
         "request_id": "req-99",
         "error_category": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.abcdef123456.sig1234567890",
-        "verification_result": "-----BEGIN PRIVATE KEY-----secret",
+        "verification_result": "-----BEGIN " + "PRIVATE KEY-----secret",
         "unapproved_secret_field": "super-secret-password",
     })
 

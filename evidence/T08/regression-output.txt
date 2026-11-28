@@ -1,0 +1,23 @@
+LEDGERLOCK - T08 COMPLETE REGRESSION
+
+Evidence date: 28 November 2026
+Tested source baseline: 9b195ed plus report-branch safety updates
+
+Commands:
+python -m unittest discover -s tests -v
+python -m pytest -q
+python -m compileall -q app storage signing logging infra scripts tests
+python scripts/check_repository_safety.py
+
+Observed result:
+- 33 unittest tests passed.
+- 37 pytest tests passed.
+- Python compilation completed successfully.
+- Repository safety scan passed after fixture correction.
+
+Status: PASS FOR IMPLEMENTED SCOPE
+
+Limitations:
+- Tests cover the working application, local checkpoint, local adapters and disabled-cloud fallback.
+- Firestore, Cloud KMS, Cloud Run, live Cloud Logging, IAM and Floci operations remain unverified.
+- GitHub Actions must be checked again after this evidence branch is pushed.

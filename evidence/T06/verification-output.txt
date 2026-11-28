@@ -1,0 +1,19 @@
+LEDGERLOCK - T06 CONTROLLED UNEXPECTED ERROR
+
+Evidence date: 28 November 2026
+Tested source baseline: 9b195ed
+
+Command:
+python -m unittest tests.test_app.AppTests.test_unexpected_error_does_not_expose_exception_details -v
+
+Expected result:
+The client receives a stable HTTP 500 response without exception text or a traceback, and the application records a minimal sanitized security event.
+
+Observed result:
+test_unexpected_error_does_not_expose_exception_details ... ok
+Sanitized event fields: event_type=application_error, outcome=failure, error_category=unexpected_error
+
+Status: PASS
+
+Limitation:
+This verifies the local application logger. Live Cloud Logging delivery, retention and access are not verified.

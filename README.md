@@ -10,7 +10,7 @@ This repository currently contains the demonstration frontend, an integrated in-
 - Jaanvi: Firestore, Cloud KMS, Cloud Run, Cloud Logging, IAM service configuration, and deployment evidence.
 - Syed: backend API, canonical record format, sequence integrity, hash chain, checkpoint interface, and verifier.
 - Omar: access control, data minimisation, safe errors, secret handling, and redacted security logging.
-- Keerthi: team leadership, frontend, GitHub and CI workflow, integration tracking, regression evidence, report assembly, release coordination, and demonstration.
+- Keerthi: team leadership, frontend, Floci setup coordination, GitHub and CI workflow, integration tracking, regression evidence, report assembly, release coordination, and demonstration.
 
 ## Run the integration baseline
 
@@ -51,10 +51,12 @@ Run the repository checks with:
 
 ```bash
 python -m unittest discover -s tests -v
-python -m compileall app tests
+python -m pytest -q
+python -m compileall app storage signing logging infra scripts tests
+python scripts/check_repository_safety.py
 ```
 
-CI runs these checks for pushes and pull requests. The committed tests cover the frontend foundation, API validation and the rubric's T01-T03 hash-chain cases. Cloud and signing owners must add their own integration tests without weakening the existing checks.
+CI runs these checks for pushes and pull requests. The committed tests cover the frontend foundation, API validation, T01-T03 integrity cases, local checkpoint, safe errors, logging controls, local adapters and disabled-cloud fallback. Live cloud operations require separate integration evidence.
 
 ## Deployment
 
@@ -79,3 +81,6 @@ CI runs these checks for pushes and pull requests. The committed tests cover the
 - [Data flow](docs/data-flow.md)
 - [Findings register](docs/findings-register.md)
 - [Release criteria](docs/release-criteria.md)
+- [Security Assessment Report](docs/security-assessment-report.md)
+- [Final demonstration plan](docs/demo-plan.md)
+- [T01-T08 evidence matrix](evidence/test-matrix.md)
