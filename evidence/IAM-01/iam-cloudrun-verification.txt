@@ -1,0 +1,30 @@
+LedgerLock IAM & Cloud Run Configuration Evidence (IAM-01)
+Date: 2026-11-28
+Owner: Jaanvi (Cloud Security Engineer)
+Scope: Deployment script configuration and local Floci-GCP boundary verification
+
+1. Floci-GCP Execution Boundary (Local Emulator Only)
+- Endpoint: http://localhost:4588 (floci-local, asia-south1)
+- Bootstrap: infra/bootstrap_floci.py creates local EC P-256 signing key (ledgerlock-keyring/checkpoint-signer/v1) over insecure localhost gRPC.
+- Opt-in Integration Test: tests/test_floci_integration.py (RUN_FLOCI_INTEGRATION=true); output recorded in evidence/floci/integration-output.txt.
+- Credential Model: Floci runs credential-free locally; IAM policy bindings are NOT enforced by Floci.
+
+2. Least-Privilege Service Account & IAM Design (infra/deploy_cloud_run.sh)
+- Dedicated Runtime Identity: ledgerlock-sa@${GCP_PROJECT_ID}.iam.gserviceaccount.com
+- Assigned Roles:
+  * roles/datastore.user (Firestore synthetic audit record read/write)
+  * roles/cloudkms.signerVerifier (Asymmetric checkpoint signing and public-key retrieval without private-key export)
+  * roles/logging.logWriter (Sanitized, allowlisted security event logging)
+- Broad roles (roles/owner, roles/editor, roles/datastore.owner, roles/cloudkms.admin) are excluded.
+
+3. Cloud Run Hardening & Explicit Runtime Environment Configuration
+- Target Region: asia-south1 (retained to match signing/kms_adapter.py default and baseline deployment config)
+- Ingress Auth: --no-allow-unauthenticated (enforces IAM invoker authentication)
+- Guardrail: Rejects missing GCP_PROJECT_ID or placeholder project IDs (floci-local, replace-with-assigned-project-id)
+- Explicit --set-env-vars passed at deploy time:
+  USE_CLOUD_SERVICES=true, GCP_PROJECT_ID, GCP_REGION, FIRESTORE_COLLECTION,
+  KMS_KEY_RING, KMS_KEY_NAME, KMS_KEY_VERSION, CLOUD_LOG_NAME
+
+4. Limitation Statement
+- Static configuration checks confirm infra/deploy_cloud_run.sh syntax and least-privilege role declarations, NOT runtime IAM enforcement.
+- Live IAM policy enforcement and live Cloud Run ingress testing remain UNVERIFIED until an authorised, billing-enabled GCP project is available.

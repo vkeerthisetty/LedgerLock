@@ -1,38 +1,35 @@
-# Cloud Service Verification, IAM & Cloud Run Security Review
-**Owner:** Jaanvi (Cloud Security Engineer)  
-**Scope:** Floci Workspace Security Review + IAM & Cloud Run Deployment Verification
+# Cloud Service Verification & IAM Notes
+**Owner:** Jaanvi (Cloud Security Engineer)
+**Environment Status:** Local simulation and Floci-GCP 0.13.0 integration verified on 28 November 2026. This is local emulator evidence, not real Google Cloud evidence.
 
-## 1. Approved Floci Workspace & Endpoint Configuration
-- **Project ID:** `floci-local`
-- **Region:** `us-central1`
-- **Shared Floci Endpoint:** `http://localhost:4588`
-- **Firestore Emulator Host:** `localhost:4588` (Collection: `audit_ledger_floci`)
-- **Cloud KMS Key Resource:** `ledgerlock-keyring` / `checkpoint-signer` / version `1` (`EC_SIGN_P256_SHA256`)
-
-## 2. Service & Operation Verification Matrix
-| Service | Operation | Status | Verification Notes |
+## 1. Service Verification Matrix
+| Service / Control | Required Operation | Status | Evidence / Implementation |
 | :--- | :--- | :--- | :--- |
-| **Firestore** | Synthetic write, `sequence`-ordered read, persistence across FastAPI restarts | **Verified** | Verified in Floci (`localhost:4588`, collection `audit_ledger_floci`) and FastAPI adapter wiring |
-| **Cloud KMS** | `EC P-256` key creation (v1), SHA-256 digest signing, `get_public_key` verification | **Verified** | Verified in Floci without exporting private key material |
-| **Cloud Logging** | Sanitized structured log write & read | **Verified** | Verified in Floci with allowlisted fields and sensitive-value redaction |
-| **IAM & Identity** | Dedicated `ledgerlock-sa` with `datastore.user`, `cloudkms.signerVerifier`, `logging.logWriter` | **Unsupported (Local) / Documented Design** | Floci is credential-free and does not enforce IAM policy bindings locally |
-| **Cloud Run** | Containerized deployment with `--no-allow-unauthenticated` | **Untested (Live)** | Scripted in `infra/deploy_cloud_run.sh` with `floci-local` guard; requires live GCP project |
-| **Cloud Logging** | Log bucket retention & IAM read access control | **Untested (Live)** | Requires live GCP Cloud Logging administration |
+| **Firestore** | Create synthetic record & read ordered by `sequence` | **Verified in Floci** | Official Firestore client wrote and read a unique synthetic document through `localhost:4588`; persisted across FastAPI restart (`evidence/floci/integration-output.txt`) |
+| **Cloud KMS** | Asymmetric checkpoint signing & public-key verification | **Verified in Floci** | EC P-256 key version (`ledgerlock-keyring/checkpoint-signer/v1`) signed a SHA-256 digest; retrieved PEM public key verified it (`evidence/floci/integration-output.txt`) |
+| **Cloud Logging** | Record redacted security events | **Verified in Floci** | Structured allowlisted event written and read back; unapproved/secret fields absent (`evidence/floci/integration-output.txt`) |
+| **IAM Least Privilege (`ledgerlock-sa`)** | Runtime service account with `datastore.user`, `cloudkms.signerVerifier`, `logging.logWriter` | **Configured / Unverified Live** | Defined in `infra/deploy_cloud_run.sh` (`evidence/IAM-01/iam-cloudrun-verification.txt`); Floci is credential-free so runtime IAM enforcement is not verified |
+| **Cloud Run Deployment** | Containerized deployment (`--no-allow-unauthenticated`) with explicit env vars | **Prepared / Unverified Live** | `infra/Dockerfile` & `infra/deploy_cloud_run.sh` prepared with `$GCP_PROJECT_ID` guard and `asia-south1` region; not deployed live due to no billing-enabled GCP sandbox |
+| **Cloud Logging Retention & Access** | Bucket retention policies & IAM read restrictions | **Untested Live** | Requires live GCP Cloud Logging administration; not simulated in Floci |
 
-## 3. Runtime Service Identity & Least-Privilege IAM Design
-- **Service Identity:** `ledgerlock-sa@<GCP_PROJECT_ID>.iam.gserviceaccount.com`
-- **Assigned Roles (Least Privilege):**
-  1. `roles/datastore.user` — Read and write tamper-evident ledger documents in Firestore.
-  2. `roles/cloudkms.signerVerifier` — Sign checkpoint digests and fetch the public key for verification; denies key export or admin deletion.
-  3. `roles/logging.logWriter` — Emit structured audit/security logs; denies reading or deleting historical log buckets.
-- **No Static Key Files:** Designed for attached Cloud Run runtime service identity with zero `.env` secrets or downloaded service-account JSON keys.
+## Floci-GCP execution boundary
 
-## 4. Cloud Run Deployment Security Verification
-- `infra/deploy_cloud_run.sh` enforces:
-  - Non-empty `${GCP_PROJECT_ID}` validation and explicit rejection of `floci-local` so emulator settings cannot be deployed accidentally.
-  - Dedicated `--service-account "${SA_EMAIL}"` attachment.
-  - `--no-allow-unauthenticated` so unauthenticated public invocations are blocked at the Cloud Run IAM layer.
+- Floci-GCP runs locally on port `4588` and requires no cloud login or real credentials.
+- `docker-compose.floci.yml` provides persistent disposable emulator state.
+- `infra/bootstrap_floci.py` creates only local KMS resources using an insecure localhost gRPC channel.
+- `tests/test_floci_integration.py` is opt-in through `RUN_FLOCI_INTEGRATION=true`.
+- Reproduction evidence is stored in `evidence/floci/integration-output.txt`.
+- FastAPI cloud mode uses Firestore records and KMS checkpoints and passed a restart-persistence test.
+- Public Render deliberately keeps cloud mode disabled and remains in-memory.
+- FastAPI cloud mode writes allowlisted event-creation, verification and checkpoint security metadata to Cloud Logging.
 
-## 5. Known Limitations
-- **Credential-Free Emulator:** Floci validates API shapes and persistence locally, but does not enforce Google Cloud IAM permissions, service-account impersonation, or Cloud Logging retention policies.
-- **Live Cloud Run Runtime:** Cold-start behavior, HTTPS ingress, and IAM invoker (`roles/run.invoker`) enforcement remain untested against live Google Cloud until a billing-enabled GCP sandbox is provisioned.
+## 2. Least-Privilege IAM Design (`ledgerlock-sa`)
+- `roles/datastore.user`: Read/write synthetic audit documents in Firestore.
+- `roles/cloudkms.signerVerifier`: Sign chain checkpoints and retrieve public key for verification without exporting private key material.
+- `roles/logging.logWriter`: Write structured, redacted security events to Cloud Logging.
+- Cloud Run deployed in `asia-south1` with `--no-allow-unauthenticated` and explicit `--set-env-vars` (`USE_CLOUD_SERVICES`, `GCP_PROJECT_ID`, `GCP_REGION`, `FIRESTORE_COLLECTION`, `KMS_KEY_RING`, `KMS_KEY_NAME`, `KMS_KEY_VERSION`, `CLOUD_LOG_NAME`) so IAM authentication and explicit cloud resource bindings are enforced at deploy time (`evidence/IAM-01/iam-cloudrun-verification.txt`).
+- **Limitation:** Static verification of `infra/deploy_cloud_run.sh` confirms configuration intent only and does **not** prove live GCP IAM enforcement.
+
+## 3. Key-Handling Controls (Test T04)
+- Private keys are never written to audit records, environment templates, logs, or Git commits.
+- `LedgerStorageAdapter.save_record()` explicitly blocks any record containing `PRIVATE KEY` markers.
