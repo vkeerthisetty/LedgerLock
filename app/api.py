@@ -10,7 +10,6 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from app.ledger_core import AuditLedger
 from app.checkpoint import create_checkpoint, verify_checkpoint
-from signing.kms_adapter import CheckpointSignerAdapter
 
 router = APIRouter()
 
@@ -37,14 +36,18 @@ class EventInput(BaseModel):
 
 
 def _checkpoint_payload(checkpoint: dict[str, Any]) -> str:
-    """Build the stable payload signed by Cloud KMS."""
     payload = {
         "schema_version": checkpoint["schema_version"],
         "latest_sequence": checkpoint["latest_sequence"],
         "latest_hash": checkpoint["latest_hash"],
         "key_version": checkpoint["key_version"],
     }
-    return json.dumps(payload, sort_keys=True, separators=(",", ":"))
+
+    return json.dumps(
+        payload,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
 
 
 def _get_records(request: Request) -> list[dict[str, Any]]:
@@ -52,7 +55,7 @@ def _get_records(request: Request) -> list[dict[str, Any]]:
 
 
 def _get_checkpoint(request: Request):
-    return request.app.state.checkpoint
+    return request.app.state.storage.get_checkpoint()
 
 
 @router.post("/api/events", status_code=201)
@@ -70,21 +73,24 @@ def add_event(event: EventInput, request: Request):
 def get_ledger(request: Request):
     try:
         records = _get_records(request)
+        checkpoint = _get_checkpoint(request)
     except Exception:
         raise HTTPException(
             status_code=503,
             detail="The ledger storage service is unavailable.",
         )
 
-    checkpoint = _get_checkpoint(request)
-
     return {
         "records": records,
         "count": len(records),
-        "latest_sequence": records[-1]["sequence"] if records else None,
+        "latest_sequence": (
+            records[-1]["sequence"] if records else None
+        ),
         "checkpoint": {
             "status": "available" if checkpoint else "unavailable",
-            "key_version": checkpoint.get("key_version") if checkpoint else None,
+            "key_version": (
+                checkpoint.get("key_version") if checkpoint else None
+            ),
         },
     }
 
@@ -93,34 +99,52 @@ def get_ledger(request: Request):
 def verify_ledger(request: Request):
     try:
         records = _get_records(request)
+        checkpoint = _get_checkpoint(request)
     except Exception:
         raise HTTPException(
             status_code=503,
-            detail="The ledger storage service is unavailable.",
+            detail="The ledger verification service is unavailable.",
         )
 
-    checkpoint = _get_checkpoint(request)
     result = AuditLedger.verify_records(records)
     checkpoint_valid = False
 
-    if checkpoint:
-        if checkpoint.get("mode") == "GCP_CLOUD_KMS":
-            try:
-                signer = request.app.state.signer
-                payload = _checkpoint_payload(checkpoint)
-                checkpoint_valid, _ = signer.verify_checkpoint(
-                    payload,
-                    checkpoint.get("signature", ""),
-                )
-            except Exception:
-                checkpoint_valid = False
+    if checkpoint and result["valid"]:
+        latest = records[-1] if records else None
 
-        elif CHECKPOINT_SECRET:
-            checkpoint_valid = verify_checkpoint(
-                records,
-                checkpoint,
-                CHECKPOINT_SECRET,
-            )
+        checkpoint_matches_chain = (
+            checkpoint.get("latest_sequence")
+            == (latest["sequence"] if latest else None)
+            and checkpoint.get("latest_hash")
+            == (latest["current_hash"] if latest else None)
+        )
+
+        if checkpoint_matches_chain:
+            if checkpoint.get("mode") == "GCP_CLOUD_KMS":
+                try:
+                    configured_version = os.getenv(
+                        "KMS_KEY_VERSION", "1"
+                    )
+
+                    if str(checkpoint.get("key_version")) == str(
+                        configured_version
+                    ):
+                        signer = request.app.state.signer
+                        payload = _checkpoint_payload(checkpoint)
+
+                        checkpoint_valid, _ = signer.verify_checkpoint(
+                            payload,
+                            checkpoint.get("signature", ""),
+                        )
+                except Exception:
+                    checkpoint_valid = False
+
+            elif CHECKPOINT_SECRET:
+                checkpoint_valid = verify_checkpoint(
+                    records,
+                    checkpoint,
+                    CHECKPOINT_SECRET,
+                )
 
     return {
         "valid": result["valid"],
@@ -143,7 +167,10 @@ def make_checkpoint(
     x_admin_token: str = Header(default=""),
 ):
     if not ADMIN_TOKEN or x_admin_token != ADMIN_TOKEN:
-        raise HTTPException(status_code=403, detail="Not authorised.")
+        raise HTTPException(
+            status_code=403,
+            detail="Not authorised.",
+        )
 
     try:
         records = _get_records(request)
@@ -167,8 +194,12 @@ def make_checkpoint(
 
             checkpoint = {
                 "schema_version": 1,
-                "latest_sequence": latest["sequence"] if latest else None,
-                "latest_hash": latest["current_hash"] if latest else None,
+                "latest_sequence": (
+                    latest["sequence"] if latest else None
+                ),
+                "latest_hash": (
+                    latest["current_hash"] if latest else None
+                ),
                 "key_version": os.getenv("KMS_KEY_VERSION", "1"),
                 "mode": "GCP_CLOUD_KMS",
             }
@@ -176,6 +207,7 @@ def make_checkpoint(
             signed = signer.sign_checkpoint(
                 _checkpoint_payload(checkpoint)
             )
+
             checkpoint.update(signed)
 
         else:
@@ -189,6 +221,7 @@ def make_checkpoint(
                 records,
                 CHECKPOINT_SECRET,
             )
+
             checkpoint["mode"] = "LOCAL_SIMULATION"
 
         request.app.state.storage.save_checkpoint(checkpoint)
