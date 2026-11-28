@@ -11,10 +11,10 @@
 | Repository key-material controls | Verified for tracked scope | T04 and safety scan |
 | Cloud/local adapters | Verified in local simulation | `tests/test_cloud_adapters.py` |
 | Firestore active storage | Not integrated | Adapter exists; FastAPI still uses memory |
-| Cloud KMS | Not verified live | Local HMAC only |
-| Cloud Logging | Not verified live | Local adapter tests only |
+| Cloud KMS | Verified in Floci | EC P-256 asymmetric sign/public-key verify round trip |
+| Cloud Logging | Verified in Floci | Sanitized structured event write/read round trip |
 | Cloud Run and IAM | Not verified | Render is current host |
-| Floci | Not verified | Workspace/service checks pending |
+| Floci | Verified locally | Floci-GCP 0.13.0; Firestore, KMS and Logging running |
 | Report and evidence | Updated | Final cloud revision still pending |
 
 ## Contract readiness
@@ -23,7 +23,8 @@
 - [x] Local checkpoint status and error shapes are documented.
 - [x] Cloud adapters are disabled unless explicitly enabled.
 - [x] Safe errors and permitted local log fields are reviewed.
-- [ ] Final Firestore/KMS interface and IAM contract are approved by all owners.
+- [x] Firestore/KMS adapter interfaces are verified against Floci.
+- [ ] IAM contract is approved by all owners.
 
 ## Integrated build
 
@@ -35,14 +36,14 @@
 - [x] Cloud claims are labelled simulated or unverified.
 - [ ] Firestore provides durable, concurrency-safe ordering.
 - [ ] KMS signs and verifies the persisted checkpoint.
-- [ ] Live logging and least-privilege access tests pass.
+- [x] Floci logging write/read and redaction test passes.
+- [ ] Least-privilege IAM enforcement tests pass.
 - [ ] Final report/evidence are repeated on the cloud-integrated revision.
 - [ ] A timed five-member rehearsal is recorded.
 
 ## Integration order for remaining work
 
-1. Verify Floci workspace and supported services.
-2. Verify Firestore, KMS, Logging and identity operations.
-3. Connect the verified adapters to FastAPI without breaking local mode.
-4. Review authorization, errors, logs and secret handling.
-5. Repeat T01-T08 and update this checklist, report and demo.
+1. Connect the verified Firestore, KMS and Logging adapters to FastAPI without breaking local mode.
+2. Verify IAM enforcement and Cloud Run runtime if required.
+3. Review authorization, errors, logs and secret handling.
+4. Repeat T01-T08 and update this checklist, report and demo.

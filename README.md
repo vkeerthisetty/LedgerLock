@@ -39,11 +39,39 @@ Implemented locally:
 - SHA-256 sequence and previous-hash verification through `POST /api/verify`.
 - An explicitly labelled local HMAC-SHA256 checkpoint through protected `POST /api/checkpoints` when `LEDGERLOCK_CHECKPOINT_SECRET` and `LEDGERLOCK_ADMIN_TOKEN` are supplied in the process environment.
 
-Still pending and intentionally reported as unavailable:
+Still pending and intentionally reported as unavailable in the public Render deployment:
 
 - Persistent Firestore storage.
 - Cloud KMS checkpoint signing and verification. The local HMAC checkpoint is not cloud-integration evidence.
 - Cloud Run, IAM and Cloud Logging evidence.
+
+## Run the local Floci-GCP verification
+
+Floci-GCP is a local, credential-free emulator. Do not sign in with a personal
+Google Cloud account and do not add service-account keys to this repository.
+
+Prerequisites: Docker Desktop running, the repository `.venv` created, and
+`requirements-dev.txt` installed. Then run from PowerShell:
+
+```powershell
+.\scripts\run_floci_integration.ps1
+```
+
+The script starts the isolated emulator on `localhost:4588`, creates a local
+EC P-256 signing key, and verifies a synthetic Firestore write/read, Cloud KMS
+sign/verify round trip, and redacted Cloud Logging write/read. The opt-in test is
+skipped during ordinary unit/CI runs so it cannot accidentally contact a real
+cloud service. Stop the emulator without deleting its local volume using:
+
+```powershell
+docker compose -f docker-compose.floci.yml down
+```
+
+Delete the disposable emulator state only when a clean lab reset is intended:
+
+```powershell
+docker compose -f docker-compose.floci.yml down -v
+```
 
 ## Tests
 

@@ -6,13 +6,13 @@ LedgerLock is a defensive cybersecurity demonstration that creates synthetic aud
 
 The application is deployed at `https://ledgerlock-mt0u.onrender.com/`. On 28 November 2026 the public health endpoint returned `status=ok`, `service=ledgerlock-api` and `environment=production`. A synthetic event was created, retrieved and verified successfully. A checkpoint request without the administrator token returned HTTP 403. The deployed process still stores the active ledger and checkpoint in memory; records can therefore be lost when Render restarts or redeploys the service.
 
-Firestore, live Cloud KMS asymmetric signing, Cloud Run, live Cloud Logging and Floci execution have not been verified. The repository contains adapters, dependencies, configuration guidance and local simulations for these future integrations, but their presence is not operational cloud evidence.
+On 28 November 2026, a local Floci-GCP 0.13.0 integration test verified Firestore write/read ordering, Cloud KMS-compatible EC P-256 asymmetric signing and public-key verification, and Cloud Logging write/read with sanitized fields. This is operational local-emulator evidence. It is not a real Google Cloud deployment, and the active FastAPI website is not yet wired to these adapters.
 
-**Release decision:** approved for a controlled local or Render-hosted synthetic demonstration with documented limitations. It is **not approved as a complete durable cloud audit trail** and must not be described as Firestore-, Cloud KMS-, Cloud Run-, Cloud Logging- or Floci-verified until those operations are observed and recorded.
+**Release decision:** approved for a controlled local or Render-hosted synthetic demonstration with documented limitations. It is **not approved as a complete durable cloud audit trail**. Firestore, KMS and Logging may be described only as verified in local Floci-GCP; Cloud Run runtime, IAM enforcement, real GCP and active-website cloud integration remain unverified.
 
 ## 2. Scope and Method
 
-This assessment covers the application source at baseline revision `9b195ed` plus documentation and evidence changes on `codex/final-assessment-report`. Testing used Python 3.12.14 on Windows and synthetic actors, resources and event descriptions only.
+This assessment covers the Floci integration revision based on parent revision `a0e9cdc`. Testing used Python 3.12.14 on Windows and synthetic actors, resources and event descriptions only.
 
 Assessment activities included:
 
@@ -22,9 +22,10 @@ Assessment activities included:
 - T01-T08 control tests and evidence review.
 - A tracked-file scan for credential files, private-key markers and high-confidence token patterns.
 - Public Render health, event, ledger, verification and authorization smoke tests.
+- Local Floci-GCP service health, Firestore write/read, KMS sign/verify and Logging write/read tests.
 - Review of architecture, data flow, threat assumptions, permissions and release boundaries.
 
-The assessment did not use real student information, production credentials or destructive tests. Source inspection and local simulation do not establish live Firestore, KMS, Cloud Run, Cloud Logging or Floci behavior.
+The assessment did not use real student information, production credentials or destructive tests. Floci used disposable local resources without a Google Cloud account or billing project. These results do not establish behavior in real GCP.
 
 ## 3. System Overview
 
@@ -34,7 +35,7 @@ The current runtime uses an in-memory `AuditLedger`. Each record hash is calcula
 
 The local checkpoint signs the latest sequence and hash using HMAC-SHA256. Checkpoint creation requires the configured administrator token. This protects the local demonstration against unauthorized checkpoint creation but is not equivalent to asymmetric Cloud KMS signing because the local application holds the shared secret.
 
-The repository also contains disabled-by-default adapters for local JSON persistence, Cloud Firestore, local HMAC signing, Cloud KMS signing and local/cloud security logging. `USE_CLOUD_SERVICES=false` is the verified configuration. Cloud paths remain unverified until tested in the assigned environment.
+The repository also contains disabled-by-default adapters for local JSON persistence, Cloud Firestore, local HMAC signing, Cloud KMS signing and local/cloud security logging. The three service adapters were verified against Floci-GCP when explicitly enabled. The public Render application keeps them disabled and continues to use the in-memory ledger and local checkpoint.
 
 ## 4. Assets and Trust Boundaries
 
@@ -55,7 +56,7 @@ Important trust boundaries are:
 |---|---|---:|---|---|
 | F-001 | Mock behavior could be mistaken for live verification | Informational | Closed for current UI | Visible mode labels and README limitations |
 | F-002 | Malformed event input could create invalid records | Medium | Closed for implemented schema | API validation and non-echo tests |
-| F-003 | Checkpoint signing authority requires protection | High | Mitigated locally; cloud open | Admin-token enforcement and local checkpoint tests |
+| F-003 | Checkpoint signing authority requires protection | High | Mitigated locally; IAM open | Admin-token tests and Floci KMS sign/verify evidence |
 | F-004 | Record modification, deletion or reordering must be detected | High | Closed for available local chain | T01-T03 |
 | F-005 | Errors or logs could expose sensitive information | Medium | Closed for tested local scope | T06-T07 and logging tests |
 | F-006 | In-memory ledger and checkpoint are not durable | High | Open | Render restart limitation and source review |
@@ -78,11 +79,11 @@ Records receive a server-generated sequence and `previous_hash`. The verifier re
 
 The local checkpoint covers schema version, latest sequence, latest hash and key version. HMAC comparison uses constant-time verification. The endpoint rejects missing or incorrect administrator tokens, invalid ledgers and missing signing configuration. The endpoint does not return the shared secret or raw stored checkpoint.
 
-The control is accurately labelled local HMAC-SHA256. It does not prove that Cloud KMS or asymmetric verification works.
+The active API control is accurately labelled local HMAC-SHA256. Separately, the KMS adapter completed an EC P-256 asymmetric sign/public-key verify round trip in Floci-GCP. The active API does not yet use that adapter.
 
 ### 6.4 Logging and data minimisation
 
-Application security logging uses an allowlist and restricted values. Unexpected errors record an event category and outcome without recording the exception text or request body. The cloud-logging adapter also filters fields and redacts sensitive-looking values in local simulation tests. Live Cloud Logging retention and access controls remain unverified.
+Application security logging uses an allowlist and restricted values. Unexpected errors record an event category and outcome without recording the exception text or request body. The cloud-logging adapter filters fields and redacts sensitive-looking values. A sanitized event was written to and read from Floci Cloud Logging. Real GCP retention and access controls remain unverified.
 
 ### 6.5 Secret handling
 
@@ -101,11 +102,11 @@ The local HMAC checkpoint improves the demonstration by detecting a changed chai
 | T01 | Untouched chain verifies | PASS | Complete available in-memory chain |
 | T02 | Changed event is detected | PASS | Controlled disposable copy |
 | T03 | Missing or reordered event is detected | PASS | Removal and reversal cases |
-| T04 | Records and repository contain no private-key material | PASS | Local records and tracked repository; no live KMS configuration |
+| T04 | Records and repository contain no private-key material | PASS | Local records, tracked repository and Floci KMS use; real GCP not inspected |
 | T05 | Report distinguishes tamper evidence from immutability | PASS | Reporting and claim-boundary requirement |
 | T06 | Controlled unexpected error is safe and logged | PASS | Local application handler and sanitized event |
-| T07 | Source, outputs and local logs inspected for sensitive data | PASS WITH LIMITATIONS | No live Cloud Logging inspection |
-| T08 | Complete automated suite is reproducible | PASS FOR IMPLEMENTED SCOPE | 33 `unittest` tests and 37 `pytest` tests passed locally |
+| T07 | Source, outputs and local logs inspected for sensitive data | PASS WITH LIMITATIONS | Floci Logging write/read verified; real GCP access and retention not inspected |
+| T08 | Complete automated suite is reproducible | PASS FOR IMPLEMENTED SCOPE | 33 `unittest`, 37 ordinary `pytest`, and 1 opt-in Floci integration test passed locally |
 
 Detailed commands, expected results, observations and limitations are indexed in `evidence/test-matrix.md`.
 
@@ -123,15 +124,22 @@ The Render deployment was observed on 28 November 2026:
 
 The deployed active ledger remains process memory. The smoke test therefore demonstrates a working request flow, not persistence across a restart.
 
+The local Floci-GCP execution additionally observed:
+
+- Floci-GCP 0.13.0 running on localhost with Firestore, KMS and Logging reported as running.
+- A unique synthetic Firestore document written and read back through the official client.
+- An emulator-held EC P-256 key signing a digest and its public key verifying the signature.
+- A sanitized Cloud Logging entry written and read back without an unapproved field.
+
 ## 10. Limitations
 
 - Render restarts and redeployments clear the active ledger and checkpoint.
 - Event creation is intentionally public for the synthetic demonstration and has no user authentication.
-- Local HMAC is not asymmetric Cloud KMS signing.
+- The active API's local HMAC is not KMS signing; the separate adapter is verified only in Floci.
 - Firestore code exists but is not connected to the active FastAPI ledger.
 - Firestore concurrency and restart persistence are not verified.
-- Live Cloud KMS signing and public-key verification are not verified.
-- Cloud Run, Cloud Logging, IAM and Floci operations are not verified.
+- Real GCP Firestore, KMS and Logging are not verified.
+- Cloud Run runtime and IAM enforcement are not verified.
 - Local adapter tests do not substitute for service-side authorization evidence.
 - A complete team rehearsal and final cloud retest remain future activities.
 
@@ -143,20 +151,19 @@ The application may be demonstrated locally or on Render using synthetic data, p
 
 **Complete cloud release: not approved.** Approval requires:
 
-1. Verified Floci access and supported-service inventory.
-2. Firestore integration with safe sequence allocation and restart-persistence evidence.
-3. Cloud KMS asymmetric signing and public-key verification evidence.
-4. Least-privilege IAM and checkpoint authorization review.
-5. Live Cloud Logging redaction and access evidence.
-6. Cloud Run verification if required by the assigned environment.
-7. T01-T08 repeated on the final cloud-integrated revision.
+1. Connect the verified Floci Firestore adapter to FastAPI with safe sequence allocation and restart-persistence evidence.
+2. Connect the verified Floci KMS signer to active checkpoint creation and verification.
+3. Connect verified structured logging to the active application.
+4. Complete least-privilege IAM and checkpoint authorization review.
+5. Verify Cloud Run runtime if required by the assigned environment.
+6. Repeat T01-T08 on the final integrated revision.
 
 ## 12. Ownership and Next Steps
 
 - **Jyoshitha:** final architecture, data-flow, threat and release-boundary review.
-- **Jaanvi:** Floci inventory; Firestore, KMS, Logging, IAM and Cloud Run service evidence.
+- **Jaanvi:** review Floci Firestore, KMS and Logging evidence; complete IAM and Cloud Run review.
 - **Syed:** connect the verified storage and signer interfaces to FastAPI and test persistence.
 - **Omar:** authorization, data minimisation, error/log review and T04/T06/T07 approval.
 - **Keerthi:** coordination, frontend, integration, evidence index, final report and demonstration.
 
-This report must be revised after live cloud integration. Pending work must never be converted to PASS without observed and traceable evidence.
+This report must be revised after active-application integration. Pending work must never be converted to PASS without observed and traceable evidence.
