@@ -2,7 +2,7 @@
 
 LedgerLock is a tamper-evident audit-ledger project. The application will create canonical audit records, link them with SHA-256 hashes, retain a trusted signed checkpoint, and report when a stored chain no longer verifies.
 
-This repository contains the demonstration frontend, FastAPI hash-chain API, local and Floci-GCP runtime modes, security architecture documents, CI checks, and project coordination material. The browser starts in an explicitly labelled mock mode. Default live mode uses disposable process memory. When cloud services are explicitly enabled for the local Floci environment, FastAPI uses transactional Firestore storage, KMS checkpoint signing and sanitized Cloud Logging; this is emulator evidence, not real GCP evidence.
+This repository contains the demonstration frontend, FastAPI hash-chain API, local and Floci-GCP runtime modes, security architecture documents, CI checks, and project coordination material. The browser starts in an explicitly labelled mock mode. Mock mode is not cryptographic or cloud-integration evidence. Default live mode uses disposable process memory. When cloud services are explicitly enabled for the local Floci environment, FastAPI uses transactional Firestore storage, KMS checkpoint signing and sanitized Cloud Logging; this is emulator evidence, not real GCP evidence.
 
 ## Current responsibility boundaries
 
