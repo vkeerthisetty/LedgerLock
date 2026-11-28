@@ -1,0 +1,7 @@
+Test ID: T04
+Phase: Baseline
+Environment: Windows Local Workstation (Python 3 / Local Simulation Adapter)
+Date: 2026-11-27
+Description: Baseline inspection before enforcing storage-layer private key guard.
+Observed Result: Unvalidated dictionary writes could theoretically accept arbitrary metadata fields if not checked before persistence.
+Status: FINDING_LOGGED (Remediated in LedgerStorageAdapter.save_record)

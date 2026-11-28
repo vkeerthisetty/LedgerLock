@@ -1,0 +1,20 @@
+LEDGERLOCK - T04 PRIVATE-KEY MATERIAL INSPECTION
+
+Evidence date: 28 November 2026
+Tested source baseline: 9b195ed
+
+Commands:
+python infra/verify_t04.py
+python scripts/check_repository_safety.py
+
+Observed result:
+T04 Private Key Inspection Result: PASS
+Signature Verification Status: Verification PASSED under LOCAL_SIMULATION
+Records Inspected: 1
+Forbidden Markers Found: 0
+Stored Key Reference: local-sim://hmac-sha256-ephemeral
+
+Status: PASS
+
+Limitation:
+This covers generated local records and tracked repository content. It does not inspect a live Cloud KMS configuration or cloud identity.

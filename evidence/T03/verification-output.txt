@@ -1,39 +1,21 @@
+LEDGERLOCK - T03 MISSING OR REORDERED EVENT DETECTION
 
-LEDGERLOCK – T03 VERIFICATION EVIDENCE
+Evidence date: 28 November 2026
+Tested source baseline: 9b195ed
+Method: Automated unittest using disposable record lists
 
-Test ID: T03
-Test Name: Removed or Reordered Event Detection
+Commands:
+python -m unittest tests.test_ledger_core.AuditLedgerTests.test_t03_missing_event_is_detected -v
+python -m unittest tests.test_ledger_core.AuditLedgerTests.test_t03_reordered_event_is_detected -v
 
-Objective:
-Verify that removing or reordering an audit event is detected by the ledger verification process.
+Expected result:
+Removal or reversal causes verification to return valid=false.
 
-Test Environment:
-Operating System:
-Python Version:
-Project Revision / Git Commit:
+Observed result:
+test_t03_missing_event_is_detected ... ok
+test_t03_reordered_event_is_detected ... ok
 
-Initial Ledger:
-Number of records:
-Initial verification result:
+Status: PASS
 
-Tampering Operation:
-[Describe the exact record removed or reordered.]
-
-Verification After Tampering:
-Command or API request:
-Actual output:
-
-Expected Result:
-The verifier should identify the integrity failure caused by the missing or reordered event, within the defined verification and checkpoint scope.
-
-Actual Result:
-[Fill in after running the test.]
-
-Test Status:
-[PASS / FAIL / NOT RUN]
-
-Evidence Notes:
-[Record relevant output and limitations. Do not include secrets or real personal data.]
-
-Tested By:
-Date:
+Limitation:
+The tests cover the complete available in-memory list. Durable Firestore ordering and concurrency are not verified.

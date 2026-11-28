@@ -56,7 +56,7 @@ The browser may display hashes but must never receive private key material, cred
 
 ## POST /api/verify
 
-Runs complete-chain and checkpoint verification.
+Runs complete available hash-chain verification. Without a configured local checkpoint it returns `checkpoint_valid: false` and states that limitation in the message. When the explicitly labelled local HMAC checkpoint is configured and successfully verified, it returns `checkpoint_valid: true`. This does not establish Cloud KMS integration.
 
 Valid response:
 
@@ -65,8 +65,8 @@ Valid response:
   "valid": true,
   "checked_records": 3,
   "failed_sequence": null,
-  "checkpoint_valid": true,
-  "message": "Chain and checkpoint verified."
+  "checkpoint_valid": false,
+  "message": "Hash chain verified. Signed checkpoint verification is unavailable."
 }
 ```
 
@@ -86,7 +86,7 @@ The response identifies the failing sequence without exposing unnecessary record
 
 ## POST /api/checkpoints
 
-Creates or refreshes a trusted signed checkpoint. This endpoint must be protected and must not be directly exposed to an ordinary demonstration user.
+Creates or refreshes the explicitly labelled local HMAC-SHA256 checkpoint. The request must supply the configured `X-Admin-Token` header. Missing or incorrect authorization returns HTTP `403`; missing signing configuration returns HTTP `503`. The endpoint never returns the signing secret or raw checkpoint signature. This local control must not be described as Cloud KMS verification.
 
 ## POST /api/demo/tamper
 

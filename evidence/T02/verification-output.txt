@@ -1,0 +1,19 @@
+LEDGERLOCK - T02 CHANGED EVENT DETECTION
+
+Evidence date: 28 November 2026
+Tested source baseline: 9b195ed
+Method: Automated unittest using a copied disposable chain
+
+Command:
+python -m unittest tests.test_ledger_core.AuditLedgerTests.test_t02_changed_event_is_detected -v
+
+Expected result:
+Changing event content without recalculating the stored hash returns valid=false.
+
+Observed result:
+test_t02_changed_event_is_detected ... ok
+
+Status: PASS
+
+Limitation:
+The test modifies a controlled in-memory copy and does not alter shared or cloud data.

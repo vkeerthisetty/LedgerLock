@@ -1,28 +1,48 @@
 # Integration Checklist
 
-Keerthi maintains this checklist; each specialist owner supplies their own code, tests, run instructions, and evidence.
+## Verified status - 28 November 2026
+
+| Area | Status | Evidence or limitation |
+|---|---|---|
+| Frontend and FastAPI | Integrated and deployed | Render smoke test and API tests |
+| Hash chain and sequence verification | Verified locally | T01-T03 |
+| Protected local checkpoint | Verified locally | API and checkpoint tests |
+| Safe errors and redacted local logging | Verified locally | T06-T07 |
+| Repository key-material controls | Verified for tracked scope | T04 and safety scan |
+| Cloud/local adapters | Verified in local simulation | `tests/test_cloud_adapters.py` |
+| Firestore active storage | Not integrated | Adapter exists; FastAPI still uses memory |
+| Cloud KMS | Not verified live | Local HMAC only |
+| Cloud Logging | Not verified live | Local adapter tests only |
+| Cloud Run and IAM | Not verified | Render is current host |
+| Floci | Not verified | Workspace/service checks pending |
+| Report and evidence | Updated | Final cloud revision still pending |
 
 ## Contract readiness
 
-- [ ] Jyoshitha approves the data flow, assets, trust boundaries, and release criteria.
-- [ ] Syed and Keerthi agree on every route, field, status code, and error shape in `docs/api-contract.md`.
-- [ ] Jaanvi documents the Firestore, KMS, Logging, and deployment interfaces.
-- [ ] Omar reviews input limits, safe errors, data minimisation, and permitted log fields.
-
-## Component readiness
-
-- [ ] Frontend works in labelled mock mode.
-- [ ] Backend unit tests cover canonical records, sequence rules, hash links, and verification.
-- [ ] Firestore adapter preserves stable sequence order and handles concurrent creation safely.
-- [ ] KMS adapter signs the approved checkpoint content and supports verification.
-- [ ] Access and logging tests confirm that secrets and complete sensitive payloads are absent.
+- [x] Frontend and backend use the documented event, ledger, verify, checkpoint and health routes.
+- [x] Local checkpoint status and error shapes are documented.
+- [x] Cloud adapters are disabled unless explicitly enabled.
+- [x] Safe errors and permitted local log fields are reviewed.
+- [ ] Final Firestore/KMS interface and IAM contract are approved by all owners.
 
 ## Integrated build
 
-- [ ] The frontend runs with `LEDGERLOCK_API_MODE=live`.
-- [ ] Create, list, verify, checkpoint, and health flows match the agreed contract.
-- [ ] T01–T07 have baseline and after-fix evidence from their owners.
-- [ ] T08 passes from a clean setup using the documented instructions.
-- [ ] Every cloud claim is labelled verified, simulated, or untested.
-- [ ] The report, README, evidence index, and demonstration use the same final release revision.
-- [ ] A tested local backup is available for the demonstration.
+- [x] Frontend works in labelled mock and live modes.
+- [x] Backend tests cover canonical hashes, sequences and links.
+- [x] Create, list, verify, checkpoint and health flows pass locally.
+- [x] Render create, list, verify, health and unauthorized-checkpoint smoke tests pass.
+- [x] Complete local regression and safety scan pass.
+- [x] Cloud claims are labelled simulated or unverified.
+- [ ] Firestore provides durable, concurrency-safe ordering.
+- [ ] KMS signs and verifies the persisted checkpoint.
+- [ ] Live logging and least-privilege access tests pass.
+- [ ] Final report/evidence are repeated on the cloud-integrated revision.
+- [ ] A timed five-member rehearsal is recorded.
+
+## Integration order for remaining work
+
+1. Verify Floci workspace and supported services.
+2. Verify Firestore, KMS, Logging and identity operations.
+3. Connect the verified adapters to FastAPI without breaking local mode.
+4. Review authorization, errors, logs and secret handling.
+5. Repeat T01-T08 and update this checklist, report and demo.

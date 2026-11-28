@@ -12,6 +12,7 @@ permissions:
 jobs:
   foundation-checks:
     runs-on: ubuntu-latest
+
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -22,20 +23,27 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: python -m pip install -r requirements-dev.txt
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-dev.txt
 
       - name: Compile Python sources
-        run: python -m compileall app tests
+        run: python -m compileall app storage signing logging infra tests
 
       - name: Run repository contract tests
         run: python -m unittest discover -s tests -v
+
+      - name: Run complete pytest suite
+        run: python -m pytest -q
+
+      - name: Scan tracked files for credential material
+        run: python scripts/check_repository_safety.py
 
       - name: Reject forbidden committed files
         shell: bash
         run: |
           set -euo pipefail
-          forbidden="$(git ls-files | grep -E '(^|/)(\.env($|\.)|.*service-account.*\.json$|application_default_credentials\.json$|.*\.(pem|key|p12|pfx)$)' | grep -v -E '(^|/)\.env\.example$' || true)"
-
+          forbidden="$(git ls-files | grep -E '(^|/)\.env($|/)|(^|/)service-account.*\.json$|(^|/)application_default_credentials\.json$|(^|/).*\.(pem|key|p12|pfx)$' | grep -vE '(^|/)\.env\.example$' || true)"
           if [ -n "$forbidden" ]; then
             echo "Forbidden credential or key-like files are tracked:"
             echo "$forbidden"

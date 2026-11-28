@@ -2,7 +2,7 @@
 
 LedgerLock is a tamper-evident audit-ledger project. The application will create canonical audit records, link them with SHA-256 hashes, retain a trusted signed checkpoint, and report when a stored chain no longer verifies.
 
-This repository currently contains Keerthi's project foundation: the demonstration frontend, integration contract, GitHub workflow, CI checks, and project coordination documents. The browser starts in an explicitly labelled mock mode so frontend work can be reviewed before the ledger and cloud adapters are merged. Mock mode is not cryptographic or cloud-integration evidence.
+This repository currently contains the demonstration frontend, an integrated in-memory hash-chain API, security architecture documents, CI checks, and project coordination material. The browser starts in an explicitly labelled mock mode. Mock mode is not cryptographic or cloud-integration evidence. Live mode connects to the local API, but the current in-memory storage is disposable and is not evidence of Firestore, Cloud KMS, Cloud Run, Cloud Logging, or signed-checkpoint integration.
 
 ## Current responsibility boundaries
 
@@ -10,9 +10,9 @@ This repository currently contains Keerthi's project foundation: the demonstrati
 - Jaanvi: Firestore, Cloud KMS, Cloud Run, Cloud Logging, IAM service configuration, and deployment evidence.
 - Syed: backend API, canonical record format, sequence integrity, hash chain, checkpoint interface, and verifier.
 - Omar: access control, data minimisation, safe errors, secret handling, and redacted security logging.
-- Keerthi: team leadership, frontend, GitHub and CI workflow, integration tracking, regression evidence, report assembly, release coordination, and demonstration.
+- Keerthi: team leadership, frontend, Floci setup coordination, GitHub and CI workflow, integration tracking, regression evidence, report assembly, release coordination, and demonstration.
 
-## Run the frontend foundation
+## Run the integration baseline
 
 1. Create and activate a virtual environment.
 2. Install dependencies:
@@ -30,7 +30,20 @@ This repository currently contains Keerthi's project foundation: the demonstrati
 
 5. Open `http://127.0.0.1:8000`.
 
-The default `LEDGERLOCK_API_MODE=mock` enables a browser-only synthetic preview. Set `LEDGERLOCK_API_MODE=live` only after the backend implements the contract in [docs/api-contract.md](docs/api-contract.md).
+The default `LEDGERLOCK_API_MODE=mock` enables a browser-only synthetic preview. To exercise the integrated local API, set `LEDGERLOCK_API_MODE=live` before starting Uvicorn. Live mode currently uses disposable process memory; restarting the server clears the ledger.
+
+Implemented locally:
+
+- Validated synthetic event creation through `POST /api/events`.
+- Ordered in-memory records through `GET /api/ledger`.
+- SHA-256 sequence and previous-hash verification through `POST /api/verify`.
+- An explicitly labelled local HMAC-SHA256 checkpoint through protected `POST /api/checkpoints` when `LEDGERLOCK_CHECKPOINT_SECRET` and `LEDGERLOCK_ADMIN_TOKEN` are supplied in the process environment.
+
+Still pending and intentionally reported as unavailable:
+
+- Persistent Firestore storage.
+- Cloud KMS checkpoint signing and verification. The local HMAC checkpoint is not cloud-integration evidence.
+- Cloud Run, IAM and Cloud Logging evidence.
 
 ## Tests
 
@@ -38,10 +51,16 @@ Run the repository checks with:
 
 ```bash
 python -m unittest discover -s tests -v
-python -m compileall app tests
+python -m pytest -q
+python -m compileall app storage signing logging infra scripts tests
+python scripts/check_repository_safety.py
 ```
 
-CI runs these checks for pushes and pull requests. Backend and cloud owners should add their own unit and integration tests without weakening the existing checks.
+CI runs these checks for pushes and pull requests. The committed tests cover the frontend foundation, API validation, T01-T03 integrity cases, local checkpoint, safe errors, logging controls, local adapters and disabled-cloud fallback. Live cloud operations require separate integration evidence.
+
+## Deployment
+
+`render.yaml` defines a Render web service for the verified local API mode. It runs the FastAPI application, checks `/api/health`, generates the local checkpoint secrets in the hosting environment, and keeps cloud services disabled. The deployed in-memory ledger is disposable and may reset whenever the service restarts; it is not Firestore, Cloud KMS, Cloud Run, or Floci evidence.
 
 ## Safety rules
 
@@ -58,3 +77,10 @@ CI runs these checks for pushes and pull requests. Backend and cloud owners shou
 - [Integration checklist](docs/integration-checklist.md)
 - [Project board plan](docs/project-board.md)
 - [Branch and review workflow](docs/workflow.md)
+- [Threat model](docs/threat-model.md)
+- [Data flow](docs/data-flow.md)
+- [Findings register](docs/findings-register.md)
+- [Release criteria](docs/release-criteria.md)
+- [Security Assessment Report](docs/security-assessment-report.md)
+- [Final demonstration plan](docs/demo-plan.md)
+- [T01-T08 evidence matrix](evidence/test-matrix.md)
