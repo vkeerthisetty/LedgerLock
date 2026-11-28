@@ -55,7 +55,7 @@ def _get_records(request: Request) -> list[dict[str, Any]]:
 
 
 def _get_checkpoint(request: Request):
-    return request.app.state.storage.get_checkpoint()
+    return request.app.state.checkpoint
 
 
 @router.post("/api/events", status_code=201)
